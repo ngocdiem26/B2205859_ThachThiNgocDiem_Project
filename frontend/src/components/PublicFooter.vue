@@ -71,7 +71,7 @@
         <!-- Library Info Section -->
         <div class="col-md-4 mb-4 text-center">
           <router-link to="/" class="text-decoration-none">
-            <img src="/images/logo.png" alt="Thư viện" class="img-fluid mb-3 footer-logo" @error="handleLogoError">
+            <img src="/images/logo.jpg" alt="Thư viện" class="img-fluid mb-3 footer-logo" @error="handleLogoError">
           </router-link>
           <h4 class="fw-bold text-primary mb-3">Thư viện sách điện tử</h4>
           <p class="text-muted mb-3">
@@ -260,7 +260,12 @@ export default {
 .footer-logo {
   width: 80px;
   height: 80px;
-  object-fit: contain;
+  /* object-fit: contain; */
+  object-fit: cover; /* Dùng cover để ảnh lấp đầy khung tròn đẹp hơn */
+  border-radius: 50%; /* <--- Dòng này biến hình vuông thành hình tròn */
+  
+  /* (Tùy chọn) Thêm viền nhẹ nếu logo bị chìm vào nền trắng */
+  border: 1px solid #eee;
 }
 
 .footer-content a {

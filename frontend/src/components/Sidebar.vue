@@ -2,7 +2,8 @@
   <div class="sidebar" :class="{ 'sidebar-collapsed': collapsed }">
     <div class="sidebar-header">
       <div class="sidebar-brand">
-        <i class="bi bi-book-half"></i>
+        <!-- <i class="bi bi-book-half"></i> -->
+         <img class="logo" src="/images/logo.jpg" alt="Logo" @error="$event.target.style.display='none'">
         <span v-if="!collapsed" class="brand-text">Quản lý mượn sách</span>
       </div>
       <button class="sidebar-toggle" @click="toggleSidebar" :title="collapsed ? 'Mở rộng' : 'Thu gọn'">

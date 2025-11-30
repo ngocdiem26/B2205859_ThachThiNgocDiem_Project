@@ -1,101 +1,123 @@
 <template>
-  <div class="login-page">
-    <div class="container">
-      <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-          <div class="card shadow-lg border-0">
-            <div class="card-body p-5">
-              <!-- Header -->
-              <div class="text-center mb-4">
-                <img src="/images/logo.png" alt="Logo" class="logo mb-3" @error="handleLogoError">
-                <h2 class="fw-bold text-primary">Đăng nhập</h2>
-                <p class="text-muted">Đăng nhập vào tài khoản độc giả hoặc nhân viên</p>
+  <div class="auth-wrapper">
+    <div class="container-fluid p-0">
+      <div class="row g-0">
+        
+        <div class="col-lg-5 col-md-6 d-flex flex-column align-items-center justify-content-center bg-white min-vh-100 position-relative">
+          <div class="auth-content px-4 px-md-5 w-100" style="max-width: 500px;">
+            
+            <div class="mb-5 text-center">
+              <h2 class="fw-bold mb-2">Chào mừng trở lại</h2>
+              <p class="text-muted">Vui lòng đăng nhập để tiếp tục</p>
+              <div class="d-flex justify-content-center align-items-center mb-3">
+                <img src="/images/logo.jpg" alt="Logo" class="logo-icon" @error="handleLogoError">
               </div>
-
-              <!-- Chọn loại đăng nhập -->
-              <div class="mb-4 d-flex justify-content-center gap-3">
-                <button type="button" class="btn btn-outline-primary" :class="{ active: loginType === 'reader' }"
-                  @click="loginType = 'reader'">Độc giả</button>
-                <button type="button" class="btn btn-outline-success" :class="{ active: loginType === 'staff' }"
-                  @click="loginType = 'staff'">Nhân viên</button>
-              </div>
-
-              <!-- Login Form -->
-              <form @submit.prevent="handleLogin">
-                <div class="mb-3">
-                  <label for="email" class="form-label">{{ loginType === 'reader' ? 'Email' : 'Mã nhân viên' }}</label>
-                  <div class="input-group">
-                    <span class="input-group-text">
-                      <i :class="loginType === 'reader' ? 'fas fa-envelope' : 'fas fa-id-badge'"></i>
-                    </span>
-                    <input v-model="form.email" :type="loginType === 'reader' ? 'email' : 'text'" class="form-control"
-                      id="email" :placeholder="loginType === 'reader' ? 'Nhập email của bạn' : 'Nhập mã nhân viên'"
-                      required :disabled="loading">
-                  </div>
-                </div>
-
-                <div class="mb-3">
-                  <label for="password" class="form-label">Mật khẩu</label>
-                  <div class="input-group">
-                    <span class="input-group-text">
-                      <i class="fas fa-lock"></i>
-                    </span>
-                    <input v-model="form.password" :type="showPassword ? 'text' : 'password'" class="form-control"
-                      id="password" placeholder="Nhập mật khẩu" required :disabled="loading">
-                    <button type="button" class="btn btn-outline-secondary" @click="showPassword = !showPassword"
-                      :disabled="loading">
-                      <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
-                    </button>
-                  </div>
-                </div>
-
-                <div class="mb-3 form-check">
-                  <input v-model="form.rememberMe" type="checkbox" class="form-check-input" id="rememberMe"
-                    :disabled="loading">
-                  <label class="form-check-label" for="rememberMe">
-                    Ghi nhớ đăng nhập
-                  </label>
-                </div>
-
-                <!-- Error Message -->
-                <div v-if="error" class="alert alert-danger" role="alert">
-                  <i class="fas fa-exclamation-circle me-2"></i>
-                  {{ error }}
-                </div>
-
-                <!-- Submit Button -->
-                <button type="submit" class="btn btn-primary w-100 py-2 mb-3" :disabled="loading">
-                  <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
-                  <i v-else class="fas fa-sign-in-alt me-2"></i>
-                  {{ loading ? 'Đang đăng nhập...' : 'Đăng nhập' }}
-                </button>
-
-                <!-- Links -->
-                <div class="text-center">
-                  <p class="mb-2">
-                    <router-link to="/forgot-password" class="text-decoration-none">
-                      Quên mật khẩu?
-                    </router-link>
-                  </p>
-                  <p class="mb-0">
-                    Chưa có tài khoản?
-                    <router-link to="/register" class="text-decoration-none fw-bold">
-                      Đăng ký ngay
-                    </router-link>
-                  </p>
-                </div>
-              </form>
+              <h4 class="fw-bold m-0 text-primary text-center">Library Manager</h4>
             </div>
-          </div>
 
-          <!-- Back to Home -->
-          <div class="text-center mt-3">
-            <router-link to="/" class="text-decoration-none">
-              <i class="fas fa-arrow-left me-2"></i>
-              Về trang chủ
+            <div class="role-switcher p-1 mb-4 rounded-pill bg-light d-flex">
+              <button 
+                class="btn rounded-pill flex-grow-1 fw-bold transition-all"
+                :class="loginType === 'reader' ? 'btn-white shadow-sm text-primary' : 'text-muted border-0'"
+                @click="loginType = 'reader'">
+                Độc giả
+              </button>
+              <button 
+                class="btn rounded-pill flex-grow-1 fw-bold transition-all"
+                :class="loginType === 'staff' ? 'btn-white shadow-sm text-success' : 'text-muted border-0'"
+                @click="loginType = 'staff'">
+                Nhân viên
+              </button>
+            </div>
+
+            <form @submit.prevent="handleLogin" class="auth-form">
+              <div class="mb-4">
+                <label class="form-label small fw-bold text-muted">{{ loginType === 'reader' ? 'Email' : 'Mã nhân viên' }}</label>
+                <div class="input-group-custom">
+                  <span class="icon text-muted">
+                    <i :class="loginType === 'reader' ? 'fas fa-envelope' : 'fas fa-id-badge'"></i>
+                  </span>
+                  <input 
+                    v-model="form.email" 
+                    :type="loginType === 'reader' ? 'email' : 'text'" 
+                    class="form-control-custom"
+                    id="email" 
+                    :placeholder="loginType === 'reader' ? 'name@example.com' : 'NV001'"
+                    required 
+                    :disabled="loading"
+                  >
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <div class="d-flex justify-content-between">
+                  <label class="form-label small fw-bold text-muted">Mật khẩu</label>
+                  <router-link to="/forgot-password" class="small text-decoration-none text-primary">
+                    Quên mật khẩu?
+                  </router-link>
+                </div>
+                <div class="input-group-custom">
+                  <span class="icon text-muted">
+                    <i class="fas fa-lock"></i>
+                  </span>
+                  <input 
+                    v-model="form.password" 
+                    :type="showPassword ? 'text' : 'password'" 
+                    class="form-control-custom"
+                    id="password" 
+                    placeholder="••••••••" 
+                    required 
+                    :disabled="loading"
+                  >
+                  <button type="button" class="btn-toggle-pass text-muted" @click="showPassword = !showPassword" :disabled="loading">
+                    <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="mb-4 form-check">
+                <input v-model="form.rememberMe" type="checkbox" class="form-check-input custom-checkbox" id="rememberMe" :disabled="loading">
+                <label class="form-check-label user-select-none" for="rememberMe">
+                  Ghi nhớ đăng nhập
+                </label>
+              </div>
+
+              <div v-if="error" class="alert alert-danger d-flex align-items-center border-0 shadow-sm" role="alert">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <div>{{ error }}</div>
+              </div>
+
+              <button type="submit" class="btn btn-primary w-100 py-3 rounded-3 fw-bold shadow-primary transition-all" :disabled="loading">
+                <span v-if="loading" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span v-else>Đăng nhập</span>
+              </button>
+
+              <div class="text-center mt-4">
+                <span class="text-muted">Chưa có tài khoản? </span>
+                <router-link to="/register" class="text-decoration-none fw-bold text-primary">
+                  Đăng ký ngay
+                </router-link>
+              </div>
+            </form>
+          </div>
+          
+          <div class="mt-auto py-3">
+             <router-link to="/" class="text-muted text-decoration-none small">
+              <i class="fas fa-arrow-left me-1"></i> Về trang chủ
             </router-link>
           </div>
         </div>
+
+        <div class="col-lg-7 col-md-6 d-none d-md-block position-relative overflow-hidden">
+          <div class="bg-image-cover h-100 w-100">
+            <!-- <div class="overlay-gradient"></div> -->
+            <div class="content-overlay text-white p-5">
+              <h1 class="display-4 fw-bold mb-4">Khám phá tri thức vô tận</h1>
+              <p class="lead">Hệ thống quản lý thư viện hiện đại, giúp bạn kết nối với hàng ngàn đầu sách một cách dễ dàng.</p>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -210,131 +232,147 @@ export default {
 </script>
 
 <style scoped>
-.login-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  padding: 2rem 0;
+/* Main Layout */
+.auth-wrapper {
+  overflow-x: hidden;
 }
 
-.card {
-  border-radius: 1rem;
-  backdrop-filter: blur(10px);
+/* Background Image Side */
+.bg-image-cover {
+  /* Bạn có thể thay đổi URL hình ảnh ở đây */
+  background-image: url('images/thuvien4.jpg');
+  background-size: cover;
+  background-position: center;
+  position: relative;
 }
 
-.logo {
+.overlay-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0.4), rgba(102, 126, 234, 0.3));
+}
+
+.content-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+/* Form Styles */
+.auth-content {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.logo-icon {
   width: 80px;
   height: 80px;
-  object-fit: contain;
+  /* object-fit: contain; */
+  object-fit: cover; /* Dùng cover để ảnh lấp đầy khung tròn đẹp hơn */
+  border-radius: 50%; /* <--- Dòng này biến hình vuông thành hình tròn */
+  
+  /* (Tùy chọn) Thêm viền nhẹ nếu logo bị chìm vào nền trắng */
+  border: 1px solid #eee;
 }
 
-.input-group-text {
-  background-color: #f8f9fa;
-  border-right: none;
-}
-
-.form-control {
-  border-left: none;
-}
-
-.form-control:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-
-.btn-primary {
-  background: linear-gradient(45deg, #0d6efd, #6610f2);
-  border: none;
+/* Custom Input Group */
+.input-group-custom {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid #e1e5eb;
   border-radius: 0.5rem;
-  font-weight: 500;
+  padding: 0.5rem 1rem;
   transition: all 0.3s ease;
+  background-color: #f8f9fa;
+}
+
+.input-group-custom:focus-within {
+  border-color: #667eea;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  background-color: #fff;
+}
+
+.input-group-custom .icon {
+  margin-right: 12px;
+  color: #a0aec0;
+}
+
+.input-group-custom:focus-within .icon {
+  color: #667eea;
+}
+
+.form-control-custom {
+  border: none;
+  width: 100%;
+  background: transparent;
+  padding: 0.5rem 0;
+  outline: none;
+  color: #2d3748;
+}
+
+.btn-toggle-pass {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 10px;
+  transition: color 0.2s;
+}
+
+.btn-toggle-pass:hover {
+  color: #4a5568;
+}
+
+/* Role Switcher */
+.btn-white {
+  background-color: #fff;
+}
+
+.transition-all {
+  transition: all 0.3s ease;
+}
+
+/* Button & Checkbox */
+.btn-primary {
+  background: #667eea; /* Màu chủ đạo mới */
+  border: none;
 }
 
 .btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+  background: #5a67d8;
+  transform: translateY(-1px);
 }
 
-.btn-primary:disabled {
-  transform: none;
-  box-shadow: none;
+.shadow-primary {
+  box-shadow: 0 4px 14px 0 rgba(102, 126, 234, 0.39);
 }
 
-.alert {
-  border-radius: 0.5rem;
-  border: none;
+.custom-checkbox {
+  width: 1.2em;
+  height: 1.2em;
+  margin-top: 0.15em;
+  cursor: pointer;
 }
 
-/* Button styling cho loại đăng nhập */
-.btn-outline-primary {
-  border-width: 2px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
+.custom-checkbox:checked {
+  background-color: #667eea;
+  border-color: #667eea;
 }
 
-.btn-outline-primary:hover {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
-}
-
-.btn-outline-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(13, 110, 253, 0.4);
-}
-
-.btn-outline-primary.active {
-  background-color: #0d6efd;
-  border-color: #0d6efd;
-  color: white;
-  box-shadow: 0 3px 8px rgba(13, 110, 253, 0.3);
-}
-
-.btn-outline-success {
-  border-width: 2px;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-outline-success:hover {
-  background-color: #198754;
-  border-color: #198754;
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
-}
-
-.btn-outline-success:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(25, 135, 84, 0.4);
-}
-
-.btn-outline-success.active {
-  background-color: #198754;
-  border-color: #198754;
-  color: white;
-  box-shadow: 0 3px 8px rgba(25, 135, 84, 0.3);
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 768px) {
-  .login-page {
-    padding: 1rem;
-  }
-
-  .card-body {
-    padding: 2rem !important;
-  }
-
-  .logo {
-    width: 60px;
-    height: 60px;
+  .auth-content {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
   }
 }
 </style>

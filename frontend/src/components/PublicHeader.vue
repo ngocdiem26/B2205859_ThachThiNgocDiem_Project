@@ -4,8 +4,8 @@
       <div class="container-fluid">
         <!-- Brand -->
         <router-link to="/" class="navbar-brand d-flex align-items-center">
-          <img src="/images/logo.png" alt="Thư viện" class="logo me-2" @error="handleLogoError">
-          <span class="fw-bold">CDBook</span>
+          <img src="/images/logo.jpg" alt="Thư viện" class="logo me-2" @error="handleLogoError">
+          <span class="fw-bold">MagicBook</span>
         </router-link>
 
         <!-- Mobile toggle -->
@@ -478,9 +478,15 @@ export default {
 
 <style scoped>
 .logo {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
+  width: 80px;
+  height: 80px;
+  /* object-fit: contain; */
+  object-fit: cover; /* Dùng cover để ảnh lấp đầy khung tròn đẹp hơn */
+  border-radius: 50%; /* <--- Dòng này biến hình vuông thành hình tròn */
+  
+  /* (Tùy chọn) Thêm viền nhẹ nếu logo bị chìm vào nền trắng */
+  border: 1px solid #eee;
+
 }
 
 .search-form {
