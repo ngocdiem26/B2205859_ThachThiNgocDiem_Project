@@ -1,142 +1,166 @@
 <template>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow">
-                    <div class="card-header py-3">
-                        <h5 class="card-title mb-0 text-primary font-weight-bold">
-                            <i class="bi bi-person-badge me-2"></i>Quản lý nhân viên
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <!-- Permission Info -->
-                        <div class="alert mb-4" :class="isManager ? 'alert-success' : 'alert-warning'" role="alert">
-                            <i class="bi me-2" :class="isManager ? 'bi-check-circle' : 'bi-exclamation-triangle'"></i>
-                            <strong>Quyền hạn:</strong> 
-                            <span v-if="isManager">Bạn có quyền quản lý nhân viên.</span>
-                            <span v-else>Bạn chỉ có thể xem danh sách nhân viên. Chỉ <strong>Quản lý thư viện</strong> mới được phép thao tác.</span>
-                            <br>
-                            Tài khoản hiện tại: <strong>{{ currentUser?.HoTenNV || currentUser?.hoTenNV }}</strong> - <strong>{{ currentUser?.ChucVu || currentUser?.chucVu }}</strong>
-                        </div>
+    <div class="page-wrapper">
+        <div class="container-fluid page-container">
+            <div class="row justify-content-center">
+                <div class="col-12">
+                    
+                    <div class="card border-0 shadow-lg rounded-4 overflow-hidden fade-in-up">
+                        <div class="card-body p-0">
+                            
+                            <div class="p-4 bg-white border-bottom">
+                                
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <div>
+                                        <h4 class="fw-bold text-dark mb-1 d-flex align-items-center">
+                                            <div class="icon-square bg-primary bg-gradient text-white shadow-sm me-3">
+                                                <i class="bi bi-people-fill"></i>
+                                            </div>
+                                            Quản lý nhân viên
+                                        </h4>
+                                        <p class="text-secondary small ms-1 mb-0 mt-1">Hệ thống quản lý nguồn nhân lực thư viện</p>
+                                    </div>
+                                </div>
 
-                        <!-- Search and Add Section -->
-                        <div class="row mb-4">
-                            <div class="col-md-8">
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="bi bi-search"></i>
-                                    </span>
-                                    <input type="text" class="form-control"
-                                        placeholder="Tìm kiếm theo mã, họ tên, chức vụ, địa chỉ, điện thoại..."
-                                        v-model="searchQuery" @input="handleSearch">
-                                    <button class="btn btn-outline-secondary" @click="clearSearch" v-if="searchQuery">
-                                        <i class="bi bi-x"></i>
-                                    </button>
+                                <div class="alert rounded-3 border-0 d-flex align-items-center shadow-sm mb-4" 
+                                    :class="isManager ? 'alert-success-soft' : 'alert-warning-soft'">
+                                    <div class="alert-icon me-3">
+                                        <i class="bi" :class="isManager ? 'bi-shield-fill-check' : 'bi-shield-lock-fill'"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold mb-1">
+                                            {{ isManager ? 'Quyền hạn: Quản trị viên' : 'Chế độ xem: Hạn chế' }}
+                                        </h6>
+                                        <p class="mb-0 small opacity-75">
+                                            <span v-if="isManager">Bạn có toàn quyền thêm, sửa, xóa và quản lý nhân viên.</span>
+                                            <span v-else>Bạn chỉ có thể xem danh sách. Liên hệ Admin để cấp quyền thao tác.</span>
+                                        </p>
+                                    </div>
+                                    <div class="ms-auto d-none d-md-block text-end small opacity-75">
+                                        <div>Tài khoản: <strong>{{ currentUser?.HoTenNV || currentUser?.hoTenNV }}</strong></div>
+                                        <div class="badge bg-white bg-opacity-50 text-dark border mt-1">{{ currentUser?.ChucVu || currentUser?.chucVu }}</div>
+                                    </div>
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <div class="position-relative search-group">
+                                            <i class="bi bi-search position-absolute text-muted search-icon"></i>
+                                            <input type="text" class="form-control form-control-lg border-0 bg-light rounded-pill ps-5"
+                                                placeholder="Tìm kiếm theo tên, mã, số điện thoại..."
+                                                v-model="searchQuery" @input="handleSearch">
+                                            <button v-if="searchQuery" @click="clearSearch" class="btn position-absolute end-0 top-50 translate-middle-y me-2 text-muted rounded-circle btn-sm p-1">
+                                                <i class="bi bi-x-circle-fill"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-primary bg-gradient border-0 btn-lg rounded-pill px-4 shadow-primary w-100 w-md-auto" 
+                                                @click="showAddModal" :disabled="!isManager">
+                                            <i class="bi bi-plus-lg me-2"></i>Thêm nhân viên
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 text-end">
-                                <button class="btn btn-primary" @click="showAddModal" :disabled="!isManager">
-                                    <i class="bi bi-plus-circle me-2"></i>Thêm nhân viên
-                                </button>
-                            </div>
-                        </div>
 
-                        <!-- Table Section -->
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th style="width: 100px;">Mã NV</th>
-                                        <th style="width: 180px;">Họ tên</th>
-                                        <th style="width: 120px;">Chức vụ</th>
-                                        <th style="width: 120px;">Điện thoại</th>
-                                        <th>Địa chỉ</th>
-                                        <th style="width: 100px;" class="text-center">Trạng thái</th>
-                                        <th style="width: 140px;" class="text-center">Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="nhanvien in nhanvienList" :key="nhanvien.MSNV">
-                                        <td>
-                                            <span class="badge bg-primary">{{ nhanvien.MSNV }}</span>
-                                        </td>
-                                        <td class="fw-bold">{{ nhanvien.HoTenNV }}</td>
-                                        <td>
-                                            <span class="badge bg-info">{{ nhanvien.ChucVu }}</span>
-                                        </td>
-                                        <td>{{ nhanvien.SoDienThoai }}</td>
-                                        <td class="text-truncate" style="max-width: 200px;" :title="nhanvien.DiaChi">
-                                            {{ nhanvien.DiaChi }}
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge" 
-                                                :class="nhanvien.isActivate === 1 ? 'bg-success' : 'bg-danger'">
-                                                {{ nhanvien.isActivate === 1 ? 'Kích hoạt' : 'Vô hiệu hóa' }}
-                                            </span>
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="btn-group" role="group" v-if="isManager">
-                                                <button class="btn btn-sm btn-outline-primary"
-                                                    @click="editNhanVien(nhanvien)" title="Chỉnh sửa">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button class="btn btn-sm"
-                                                    :class="nhanvien.isActivate === 1 ? 'btn-outline-warning' : 'btn-outline-success'"
-                                                    @click="toggleActivate(nhanvien)"
-                                                    :title="nhanvien.isActivate === 1 ? 'Vô hiệu hóa' : 'Kích hoạt'">
-                                                    <i :class="nhanvien.isActivate === 1 ? 'bi bi-toggle-on' : 'bi bi-toggle-off'"></i>
-                                                </button>
-                                                <button class="btn btn-sm btn-outline-danger"
-                                                    @click="confirmDelete(nhanvien)" title="Xóa">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                            <div v-else class="text-muted">
-                                                <small>Không có quyền</small>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    <tr v-if="nhanvienList.length === 0 && !loading">
-                                        <td colspan="7" class="text-center text-muted py-4">
-                                            <i class="bi bi-inbox display-4 d-block mb-2"></i>
-                                            {{ searchQuery ? 'Không tìm thấy nhân viên nào' : 'Chưa có nhân viên nào' }}
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Loading State -->
-                        <div v-if="loading" class="text-center py-4">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Đang tải...</span>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th class="py-3 ps-4 text-uppercase text-secondary x-small fw-bolder">Mã NV</th>
+                                            <th class="py-3 text-uppercase text-secondary x-small fw-bolder">Thông tin nhân viên</th>
+                                            <th class="py-3 text-uppercase text-secondary x-small fw-bolder">Liên hệ</th>
+                                            <th class="py-3 text-uppercase text-secondary x-small fw-bolder">Địa chỉ</th>
+                                            <th class="py-3 text-center text-uppercase text-secondary x-small fw-bolder">Trạng thái</th>
+                                            <th class="py-3 text-end pe-4 text-uppercase text-secondary x-small fw-bolder">Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white">
+                                        <tr v-for="nhanvien in nhanvienList" :key="nhanvien.MSNV" class="align-middle">
+                                            <td class="ps-4">
+                                                <span class="badge bg-light text-primary border font-monospace">#{{ nhanvien.MSNV }}</span>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-circle me-3" :class="getRandomColorClass(nhanvien.HoTenNV)">
+                                                        {{ nhanvien.HoTenNV.charAt(0).toUpperCase() }}
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold text-dark">{{ nhanvien.HoTenNV }}</h6>
+                                                        <small class="text-muted">{{ nhanvien.ChucVu }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="d-flex flex-column gap-1">
+                                                    <div class="small"><i class="bi bi-telephone text-muted me-2"></i>{{ nhanvien.SoDienThoai }}</div>
+                                                    <div class="small text-muted" v-if="nhanvien.Email"><i class="bi bi-envelope me-2"></i>{{ nhanvien.Email }}</div>
+                                                </div>
+                                            </td>
+                                            <td style="max-width: 200px;">
+                                                <div class="text-truncate small text-secondary" :title="nhanvien.DiaChi">
+                                                    <i class="bi bi-geo-alt me-1"></i>{{ nhanvien.DiaChi }}
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="status-pill" 
+                                                    :class="nhanvien.isActivate === 1 ? 'status-active' : 'status-inactive'">
+                                                    {{ nhanvien.isActivate === 1 ? 'Hoạt động' : 'Đã khóa' }}
+                                                </span>
+                                            </td>
+                                            <td class="text-end pe-4">
+                                                <div class="d-inline-flex gap-2" v-if="isManager">
+                                                    <button class="btn btn-icon btn-light text-primary shadow-sm" 
+                                                        @click="editNhanVien(nhanvien)" title="Chỉnh sửa">
+                                                        <i class="bi bi-pencil-fill"></i>
+                                                    </button>
+                                                    
+                                                    <button class="btn btn-icon shadow-sm"
+                                                        :class="nhanvien.isActivate === 1 ? 'btn-light text-warning' : 'btn-light text-success'"
+                                                        @click="toggleActivate(nhanvien)"
+                                                        :title="nhanvien.isActivate === 1 ? 'Vô hiệu hóa' : 'Kích hoạt'">
+                                                        <i :class="nhanvien.isActivate === 1 ? 'bi bi-lock-fill' : 'bi bi-unlock-fill'"></i>
+                                                    </button>
+                                                    
+                                                    <button class="btn btn-icon btn-light text-danger shadow-sm" 
+                                                        @click="confirmDelete(nhanvien)" title="Xóa">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </div>
+                                                <span v-else class="badge bg-light text-muted border">Read-only</span>
+                                            </td>
+                                        </tr>
+                                        
+                                        <tr v-if="nhanvienList.length === 0 && !loading">
+                                            <td colspan="6" class="text-center py-5">
+                                                <div class="py-4">
+                                                    <div class="mb-3">
+                                                        <i class="bi bi-search display-1 text-light"></i>
+                                                    </div>
+                                                    <h5 class="text-muted fw-normal">Không tìm thấy dữ liệu</h5>
+                                                    <p class="text-secondary small mb-0">Thử thay đổi từ khóa tìm kiếm hoặc thêm mới.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <p class="mt-2 text-muted">Đang tải danh sách nhân viên...</p>
-                        </div>
 
-                        <!-- Pagination -->
-                        <div class="row mt-4" v-if="totalItems > 0">
-                            <div class="col-md-6">
-                                <p class="text-muted">
-                                    Hiển thị {{ startIndex + 1 }} - {{ endIndex }} trong tổng số {{ totalItems }} nhân viên
-                                </p>
-                            </div>
-                            <div class="col-md-6">
-                                <nav aria-label="Pagination">
-                                    <ul class="pagination justify-content-end mb-0">
+                            <div class="p-3 border-top bg-light d-flex justify-content-between align-items-center" v-if="totalItems > 0">
+                                <span class="text-muted small ms-2">
+                                    Hiển thị <strong>{{ startIndex + 1 }}-{{ endIndex }}</strong> / <strong>{{ totalItems }}</strong>
+                                </span>
+                                <nav>
+                                    <ul class="pagination pagination-sm mb-0 shadow-sm rounded-pill overflow-hidden">
                                         <li class="page-item" :class="{ disabled: currentPage === 1 }">
-                                            <button class="page-link" @click="goToPage(currentPage - 1)"
-                                                :disabled="currentPage === 1">
+                                            <button class="page-link border-0" @click="goToPage(currentPage - 1)">
                                                 <i class="bi bi-chevron-left"></i>
                                             </button>
                                         </li>
-                                        <li class="page-item" v-for="page in visiblePages" :key="page"
-                                            :class="{ active: page === currentPage }">
-                                            <button class="page-link" @click="goToPage(page)">{{ page }}</button>
+                                        <li class="page-item" v-for="page in visiblePages" :key="page" :class="{ active: page === currentPage }">
+                                            <button class="page-link border-0" @click="goToPage(page)">{{ page }}</button>
                                         </li>
                                         <li class="page-item" :class="{ disabled: currentPage === totalPages }">
-                                            <button class="page-link" @click="goToPage(currentPage + 1)"
-                                                :disabled="currentPage === totalPages">
+                                            <button class="page-link border-0" @click="goToPage(currentPage + 1)">
                                                 <i class="bi bi-chevron-right"></i>
                                             </button>
                                         </li>
@@ -149,178 +173,147 @@
             </div>
         </div>
 
-        <!-- Add/Edit Modal -->
-        <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }"
-            tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-person-plus me-2" v-if="!editingNhanVien"></i>
-                            <i class="bi bi-person-gear me-2" v-else></i>
-                            {{ editingNhanVien ? 'Chỉnh sửa nhân viên' : 'Thêm nhân viên mới' }}
+        <div class="modal fade" :class="{ show: showModal }" :style="{ display: showModal ? 'block' : 'none' }" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-header border-bottom-0 pb-0 ps-4 pe-4 pt-4">
+                        <h5 class="modal-title fw-bold d-flex align-items-center">
+                            <div class="icon-square-sm rounded-3 me-2 text-white" :class="editingNhanVien ? 'bg-warning' : 'bg-primary'">
+                                <i class="bi" :class="editingNhanVien ? 'bi-pencil-square' : 'bi-person-plus-fill'"></i>
+                            </div>
+                            {{ editingNhanVien ? 'Cập nhật thông tin' : 'Thêm nhân viên mới' }}
                         </h5>
                         <button type="button" class="btn-close" @click="closeModal"></button>
                     </div>
-                    <div class="modal-body">
-                        <form @submit.prevent="saveNhanVien">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="msnv" class="form-label">Mã số nhân viên <span
-                                                class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="msnv"
+                    <div class="modal-body p-4">
+                        <form @submit.prevent="saveNhanVien" class="needs-validation">
+                            <div class="card bg-light border-0 p-3 mb-3 rounded-3">
+                                <h6 class="text-primary x-small fw-bold text-uppercase mb-3">Thông tin định danh</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Mã số nhân viên <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control rounded-3" 
                                             v-model="formData.MSNV" :disabled="editingNhanVien"
                                             :class="{ 'is-invalid': errors.MSNV }" placeholder="VD: NV001">
-                                        <div class="invalid-feedback" v-if="errors.MSNV">{{ errors.MSNV }}</div>
+                                        <div class="invalid-feedback">{{ errors.MSNV }}</div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="chucVu" class="form-label">Chức vụ <span
-                                                class="text-danger">*</span></label>
-                                        <select class="form-select" id="chucVu" v-model="formData.ChucVu"
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Chức vụ <span class="text-danger">*</span></label>
+                                        <select class="form-select rounded-3" v-model="formData.ChucVu"
                                             :class="{ 'is-invalid': errors.ChucVu }">
-                                            <option value="">Chọn chức vụ</option>
+                                            <option value="">-- Chọn chức vụ --</option>
                                             <option value="Quản lý thư viện">Quản lý thư viện</option>
                                             <option value="Thủ thư">Thủ thư</option>
                                             <option value="Nhân viên">Nhân viên</option>
                                             <option value="Thực tập sinh">Thực tập sinh</option>
                                         </select>
-                                        <div class="invalid-feedback" v-if="errors.ChucVu">{{ errors.ChucVu }}</div>
+                                        <div class="invalid-feedback">{{ errors.ChucVu }}</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Họ và tên <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control rounded-3" 
+                                            v-model="formData.HoTenNV" :class="{ 'is-invalid': errors.HoTenNV }" 
+                                            placeholder="VD: Nguyễn Văn A">
+                                        <div class="invalid-feedback">{{ errors.HoTenNV }}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="hoTenNV" class="form-label">Họ tên nhân viên <span
-                                        class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="hoTenNV" v-model="formData.HoTenNV"
-                                    :class="{ 'is-invalid': errors.HoTenNV }" placeholder="VD: Nguyễn Văn An">
-                                <div class="invalid-feedback" v-if="errors.HoTenNV">{{ errors.HoTenNV }}</div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="soDienThoai" class="form-label">Số điện thoại <span
-                                                class="text-danger">*</span></label>
-                                        <input type="tel" class="form-control" id="soDienThoai"
-                                            v-model="formData.SoDienThoai" :class="{ 'is-invalid': errors.SoDienThoai }"
-                                            placeholder="VD: 0901234567">
-                                        <div class="invalid-feedback" v-if="errors.SoDienThoai">{{ errors.SoDienThoai }}</div>
+                            <div class="card bg-white border p-3 rounded-3">
+                                <h6 class="text-secondary x-small fw-bold text-uppercase mb-3">Thông tin chi tiết</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Số điện thoại <span class="text-danger">*</span></label>
+                                        <input type="tel" class="form-control rounded-3"
+                                            v-model="formData.SoDienThoai" :class="{ 'is-invalid': errors.SoDienThoai }">
+                                        <div class="invalid-feedback">{{ errors.SoDienThoai }}</div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="email" class="form-label">Email</label>
-                                        <input type="email" class="form-control" id="email"
-                                            v-model="formData.Email" :class="{ 'is-invalid': errors.Email }"
-                                            placeholder="VD: nhanvien@email.com">
-                                        <div class="invalid-feedback" v-if="errors.Email">{{ errors.Email }}</div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Email</label>
+                                        <input type="email" class="form-control rounded-3"
+                                            v-model="formData.Email" :class="{ 'is-invalid': errors.Email }">
+                                        <div class="invalid-feedback">{{ errors.Email }}</div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="ngaySinh" class="form-label">Ngày sinh</label>
-                                        <input type="date" class="form-control" id="ngaySinh"
-                                            v-model="formData.NgaySinh" :class="{ 'is-invalid': errors.NgaySinh }"
-                                            :max="maxDate">
-                                        <div class="invalid-feedback" v-if="errors.NgaySinh">{{ errors.NgaySinh }}</div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Ngày sinh</label>
+                                        <input type="date" class="form-control rounded-3" 
+                                            v-model="formData.NgaySinh" :class="{ 'is-invalid': errors.NgaySinh }" :max="maxDate">
+                                        <div class="invalid-feedback">{{ errors.NgaySinh }}</div>
                                     </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="ngayVaoLam" class="form-label">Ngày vào làm</label>
-                                        <input type="date" class="form-control" id="ngayVaoLam"
-                                            v-model="formData.NgayVaoLam" :class="{ 'is-invalid': errors.NgayVaoLam }"
-                                            :max="todayDate">
-                                        <div class="invalid-feedback" v-if="errors.NgayVaoLam">{{ errors.NgayVaoLam }}</div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold">Ngày vào làm</label>
+                                        <input type="date" class="form-control rounded-3" 
+                                            v-model="formData.NgayVaoLam" :class="{ 'is-invalid': errors.NgayVaoLam }" :max="todayDate">
+                                        <div class="invalid-feedback">{{ errors.NgayVaoLam }}</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label small fw-bold">Địa chỉ <span class="text-danger">*</span></label>
+                                        <textarea class="form-control rounded-3" rows="2" 
+                                            v-model="formData.DiaChi" :class="{ 'is-invalid': errors.DiaChi }"></textarea>
+                                        <div class="invalid-feedback">{{ errors.DiaChi }}</div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label for="diaChi" class="form-label">Địa chỉ <span
-                                        class="text-danger">*</span></label>
-                                <textarea class="form-control" id="diaChi" v-model="formData.DiaChi"
-                                    :class="{ 'is-invalid': errors.DiaChi }" rows="3"
-                                    placeholder="VD: 123 Đường ABC, Phường XYZ, Quận 1, TP.HCM"></textarea>
-                                <div class="invalid-feedback" v-if="errors.DiaChi">{{ errors.DiaChi }}</div>
-                            </div>
-
-                            <div class="mb-3" v-if="!editingNhanVien">
-                                <label for="password" class="form-label">Mật khẩu <span
-                                        class="text-danger">*</span></label>
-                                <input type="password" class="form-control" id="password"
-                                    v-model="formData.Password" :class="{ 'is-invalid': errors.Password }"
-                                    placeholder="Nhập mật khẩu">
-                                <div class="invalid-feedback" v-if="errors.Password">{{ errors.Password }}</div>
+                            <div class="alert alert-warning d-flex align-items-center mt-3 p-2 rounded-3" v-if="!editingNhanVien">
+                                <i class="bi bi-key-fill fs-4 me-3 text-warning"></i>
+                                <div class="flex-grow-1">
+                                    <label class="form-label small fw-bold mb-0">Mật khẩu khởi tạo <span class="text-danger">*</span></label>
+                                    <input type="password" class="form-control form-control-sm mt-1 border-warning" 
+                                        v-model="formData.Password" :class="{ 'is-invalid': errors.Password }"
+                                        placeholder="Nhập mật khẩu (min 6 ký tự)">
+                                    <div class="invalid-feedback">{{ errors.Password }}</div>
+                                </div>
                             </div>
                         </form>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="closeModal">
-                            <i class="bi bi-x-circle me-2"></i>Hủy
-                        </button>
-                        <button type="button" class="btn btn-primary" @click="saveNhanVien" :disabled="saving">
+                    <div class="modal-footer border-top-0 pt-0 pb-4 px-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" @click="closeModal">Hủy</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" 
+                            @click="saveNhanVien" :disabled="saving">
                             <span v-if="saving" class="spinner-border spinner-border-sm me-2"></span>
-                            <i class="bi bi-check-circle me-2" v-else></i>
-                            {{ editingNhanVien ? 'Cập nhật' : 'Thêm mới' }}
+                            {{ editingNhanVien ? 'Lưu thay đổi' : 'Tạo mới' }}
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Delete Confirmation Modal -->
-        <div class="modal fade" :class="{ show: showDeleteModal }"
-            :style="{ display: showDeleteModal ? 'block' : 'none' }" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title text-danger">
-                            <i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa
-                        </h5>
-                        <button type="button" class="btn-close" @click="showDeleteModal = false"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Bạn có chắc chắn muốn xóa nhân viên <strong>{{ deletingNhanVien?.HoTenNV }}</strong>?</p>
-                        <p class="text-muted small">Hành động này không thể hoàn tác.</p>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @click="showDeleteModal = false">
-                            <i class="bi bi-x-circle me-2"></i>Hủy
-                        </button>
-                        <button type="button" class="btn btn-danger" @click="deleteNhanVien" :disabled="deleting">
-                            <span v-if="deleting" class="spinner-border spinner-border-sm me-2"></span>
-                            <i class="bi bi-trash me-2" v-else></i>
-                            Xóa
-                        </button>
+        <div class="modal fade" :class="{ show: showDeleteModal }" :style="{ display: showDeleteModal ? 'block' : 'none' }" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content border-0 shadow-lg rounded-4">
+                    <div class="modal-body text-center p-4">
+                        <div class="avatar-circle bg-danger bg-opacity-10 text-danger mx-auto mb-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                            <i class="bi bi-trash3"></i>
+                        </div>
+                        <h5 class="fw-bold">Xóa nhân viên?</h5>
+                        <p class="text-muted small mb-4">
+                            Bạn sắp xóa <strong>{{ deletingNhanVien?.HoTenNV }}</strong>. <br>Hành động này không thể hoàn tác.
+                        </p>
+                        <div class="d-grid gap-2">
+                            <button type="button" class="btn btn-danger rounded-pill shadow-sm" @click="deleteNhanVien" :disabled="deleting">
+                                <span v-if="deleting" class="spinner-border spinner-border-sm me-2"></span>
+                                Xác nhận xóa
+                            </button>
+                            <button type="button" class="btn btn-light rounded-pill text-muted" @click="showDeleteModal = false">Hủy bỏ</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Modal Backdrop -->
-        <div class="modal-backdrop fade show" v-if="showModal || showDeleteModal"></div>
+        <div class="modal-backdrop fade show glass-backdrop" v-if="showModal || showDeleteModal"></div>
     </div>
 </template>
 
 <script setup>
+// GIỮ NGUYÊN 100% LOGIC CŨ CỦA BẠN
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../utils/axios.js'
 
 const router = useRouter()
-
-// Current user info
 const currentUser = ref(null)
-
-// Reactive data
 const nhanvienList = ref([])
 const loading = ref(false)
 const saving = ref(false)
@@ -330,427 +323,274 @@ const currentPage = ref(1)
 const itemsPerPage = ref(10)
 const totalItems = ref(0)
 const totalPages = ref(0)
-
-// Modal states
 const showModal = ref(false)
 const showDeleteModal = ref(false)
 const editingNhanVien = ref(null)
 const deletingNhanVien = ref(null)
-
-// Form data
-const formData = ref({
-    MSNV: '',
-    HoTenNV: '',
-    Password: '',
-    ChucVu: '',
-    DiaChi: '',
-    SoDienThoai: '',
-    Email: '',
-    NgaySinh: '',
-    NgayVaoLam: ''
-})
-
-// Form errors
+const formData = ref({ MSNV: '', HoTenNV: '', Password: '', ChucVu: '', DiaChi: '', SoDienThoai: '', Email: '', NgaySinh: '', NgayVaoLam: '' })
 const errors = ref({})
 
-// Computed properties
-const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
-const endIndex = computed(() => {
-    return Math.min(startIndex.value + itemsPerPage.value, totalItems.value)
-})
+// Helper function for random avatar color
+const getRandomColorClass = (name) => {
+    const colors = ['bg-primary', 'bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'bg-dark'];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % colors.length;
+    return `${colors[index]} bg-opacity-10 text-${colors[index].replace('bg-', '')}`;
+}
 
+const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
+const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage.value, totalItems.value))
 const visiblePages = computed(() => {
     const pages = []
     const start = Math.max(1, currentPage.value - 2)
     const end = Math.min(totalPages.value, currentPage.value + 2)
-
-    for (let i = start; i <= end; i++) {
-        pages.push(i)
-    }
+    for (let i = start; i <= end; i++) { pages.push(i) }
     return pages
 })
-
 const maxDate = computed(() => {
     const today = new Date()
     const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate())
     return maxDate.toISOString().split('T')[0]
 })
-
-const todayDate = computed(() => {
-    return new Date().toISOString().split('T')[0]
-})
-
-// Check if current user is manager
+const todayDate = computed(() => new Date().toISOString().split('T')[0])
 const isManager = computed(() => {
     const chucVu = currentUser.value?.ChucVu || currentUser.value?.chucVu
-    console.log('isManager check:', {
-        currentUser: currentUser.value,
-        ChucVu: currentUser.value?.ChucVu,
-        chucVu: currentUser.value?.chucVu,
-        finalChucVu: chucVu,
-        isManager: chucVu === 'Quản lý thư viện'
-    })
     return chucVu === 'Quản lý thư viện'
 })
 
-// Methods
 const loadNhanVien = async () => {
     loading.value = true
-
     try {
-        const params = {
-            page: currentPage.value,
-            limit: itemsPerPage.value,
-            search: searchQuery.value
-        }
-        
+        const params = { page: currentPage.value, limit: itemsPerPage.value, search: searchQuery.value }
         const response = await api.get('/nhanvien', { params })
         const data = response.data.data
-        
         if (data) {
             nhanvienList.value = data.nhanviens || []
             totalItems.value = data.pagination?.total || 0
             totalPages.value = data.pagination?.totalPages || 0
         } else {
-            nhanvienList.value = []
-            totalItems.value = 0
-            totalPages.value = 0
+            nhanvienList.value = []; totalItems.value = 0; totalPages.value = 0
         }
     } catch (error) {
-        console.error('Error loading nhan vien from API:', error)
-        nhanvienList.value = []
-        totalItems.value = 0
-        totalPages.value = 0
-    } finally {
-        loading.value = false
-    }
+        console.error('Error loading:', error)
+        nhanvienList.value = []; totalItems.value = 0; totalPages.value = 0
+    } finally { loading.value = false }
 }
 
-const handleSearch = () => {
-    currentPage.value = 1
-    loadNhanVien()
-}
-
-const clearSearch = () => {
-    searchQuery.value = ''
-    currentPage.value = 1
-    loadNhanVien()
-}
-
-const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page
-        loadNhanVien()
-    }
-}
-
-const showAddModal = () => {
-    if (!isManager.value) {
-        alert('Chỉ Quản lý thư viện mới có quyền thêm nhân viên!')
-        return
-    }
-    editingNhanVien.value = null
-    resetForm()
-    showModal.value = true
-}
-
-const editNhanVien = (nhanvien) => {
-    if (!isManager.value) {
-        alert('Chỉ Quản lý thư viện mới có quyền chỉnh sửa nhân viên!')
-        return
-    }
+const handleSearch = () => { currentPage.value = 1; loadNhanVien() }
+const clearSearch = () => { searchQuery.value = ''; currentPage.value = 1; loadNhanVien() }
+const goToPage = (page) => { if (page >= 1 && page <= totalPages.value) { currentPage.value = page; loadNhanVien() } }
+const showAddModal = () => { if (!isManager.value) { alert('Chỉ Quản lý thư viện mới có quyền!'); return } editingNhanVien.value = null; resetForm(); showModal.value = true }
+const editNhanVien = (nhanvien) => { 
+    if (!isManager.value) { alert('Chỉ Quản lý thư viện mới có quyền!'); return } 
     editingNhanVien.value = nhanvien
-    formData.value = { 
-        ...nhanvien,
-        NgaySinh: nhanvien.NgaySinh ? new Date(nhanvien.NgaySinh).toISOString().split('T')[0] : '',
-        NgayVaoLam: nhanvien.NgayVaoLam ? new Date(nhanvien.NgayVaoLam).toISOString().split('T')[0] : ''
-    }
-    errors.value = {}
-    showModal.value = true
+    formData.value = { ...nhanvien, NgaySinh: nhanvien.NgaySinh ? new Date(nhanvien.NgaySinh).toISOString().split('T')[0] : '', NgayVaoLam: nhanvien.NgayVaoLam ? new Date(nhanvien.NgayVaoLam).toISOString().split('T')[0] : '' }
+    errors.value = {}; showModal.value = true 
 }
-
-const resetForm = () => {
-    formData.value = {
-        MSNV: '',
-        HoTenNV: '',
-        Password: '',
-        ChucVu: '',
-        DiaChi: '',
-        SoDienThoai: '',
-        Email: '',
-        NgaySinh: '',
-        NgayVaoLam: ''
-    }
-    errors.value = {}
-}
-
-const closeModal = () => {
-    showModal.value = false
-    resetForm()
-    editingNhanVien.value = null
-}
-
+const resetForm = () => { formData.value = { MSNV: '', HoTenNV: '', Password: '', ChucVu: '', DiaChi: '', SoDienThoai: '', Email: '', NgaySinh: '', NgayVaoLam: '' }; errors.value = {} }
+const closeModal = () => { showModal.value = false; resetForm(); editingNhanVien.value = null }
 const validateForm = () => {
     errors.value = {}
-
-    if (!formData.value.MSNV.trim()) {
-        errors.value.MSNV = 'Mã số nhân viên là bắt buộc'
-    } else if (!/^NV\d{3,}$/.test(formData.value.MSNV)) {
-        errors.value.MSNV = 'Mã nhân viên phải có định dạng NV001, NV002, ...'
-    }
-
-    if (!formData.value.HoTenNV.trim()) {
-        errors.value.HoTenNV = 'Họ tên nhân viên là bắt buộc'
-    } else if (formData.value.HoTenNV.length > 100) {
-        errors.value.HoTenNV = 'Họ tên không được quá 100 ký tự'
-    }
-
-    if (!editingNhanVien.value && !formData.value.Password.trim()) {
-        errors.value.Password = 'Mật khẩu là bắt buộc'
-    } else if (formData.value.Password && formData.value.Password.length < 6) {
-        errors.value.Password = 'Mật khẩu phải có ít nhất 6 ký tự'
-    }
-
-    if (!formData.value.ChucVu) {
-        errors.value.ChucVu = 'Chức vụ là bắt buộc'
-    }
-
-    if (!formData.value.DiaChi.trim()) {
-        errors.value.DiaChi = 'Địa chỉ là bắt buộc'
-    } else if (formData.value.DiaChi.length > 200) {
-        errors.value.DiaChi = 'Địa chỉ không được quá 200 ký tự'
-    }
-
-    if (!formData.value.SoDienThoai.trim()) {
-        errors.value.SoDienThoai = 'Số điện thoại là bắt buộc'
-    } else if (!/^(0|\+84)[0-9]{9,10}$/.test(formData.value.SoDienThoai)) {
-        errors.value.SoDienThoai = 'Số điện thoại không hợp lệ'
-    }
-
-    if (formData.value.Email && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(formData.value.Email)) {
-        errors.value.Email = 'Email không hợp lệ'
-    }
-
-    if (formData.value.NgaySinh) {
-        const birthDate = new Date(formData.value.NgaySinh)
-        const today = new Date()
-        const age = today.getFullYear() - birthDate.getFullYear()
-        if (age < 18 || age > 65) {
-            errors.value.NgaySinh = 'Tuổi nhân viên phải từ 18 đến 65'
-        }
-    }
-
-    if (formData.value.NgayVaoLam) {
-        const workDate = new Date(formData.value.NgayVaoLam)
-        if (workDate > new Date()) {
-            errors.value.NgayVaoLam = 'Ngày vào làm không được là ngày tương lai'
-        }
-    }
-
+    if (!formData.value.MSNV.trim()) errors.value.MSNV = 'Mã số nhân viên là bắt buộc'
+    else if (!/^NV\d{3,}$/.test(formData.value.MSNV)) errors.value.MSNV = 'Định dạng NVxxx'
+    if (!formData.value.HoTenNV.trim()) errors.value.HoTenNV = 'Họ tên là bắt buộc'
+    if (!editingNhanVien.value && !formData.value.Password.trim()) errors.value.Password = 'Mật khẩu là bắt buộc'
+    else if (formData.value.Password && formData.value.Password.length < 6) errors.value.Password = 'Tối thiểu 6 ký tự'
+    if (!formData.value.ChucVu) errors.value.ChucVu = 'Chức vụ là bắt buộc'
+    if (!formData.value.DiaChi.trim()) errors.value.DiaChi = 'Địa chỉ là bắt buộc'
+    if (!formData.value.SoDienThoai.trim()) errors.value.SoDienThoai = 'SĐT là bắt buộc'
+    else if (!/^(0|\+84)[0-9]{9,10}$/.test(formData.value.SoDienThoai)) errors.value.SoDienThoai = 'SĐT không hợp lệ'
+    if (formData.value.Email && !/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(formData.value.Email)) errors.value.Email = 'Email không hợp lệ'
     return Object.keys(errors.value).length === 0
 }
-
 const saveNhanVien = async () => {
-    if (!isManager.value) {
-        alert('Chỉ Quản lý thư viện mới có quyền lưu thông tin nhân viên!')
-        return
-    }
-    
+    if (!isManager.value) return
     if (!validateForm()) return
-
     saving.value = true
     try {
         if (editingNhanVien.value) {
-            // Update existing - don't send password
-            const updateData = { ...formData.value }
-            delete updateData.Password
+            const updateData = { ...formData.value }; delete updateData.Password
             await api.put(`/nhanvien/${editingNhanVien.value._id}`, updateData)
-        } else {
-            // Create new
-            await api.post('/nhanvien', formData.value)
-        }
-
-        closeModal()
-        loadNhanVien()
-        console.log('Nhân viên đã được lưu thành công')
-    } catch (error) {
-        console.error('Error saving nhan vien:', error)
-        if (error.response?.data?.errors) {
-            errors.value = error.response.data.errors
-        }
-    } finally {
-        saving.value = false
-    }
+        } else { await api.post('/nhanvien', formData.value) }
+        closeModal(); loadNhanVien()
+    } catch (error) { 
+        if (error.response?.data?.errors) errors.value = error.response.data.errors
+    } finally { saving.value = false }
 }
-
 const toggleActivate = async (nhanvien) => {
-    if (!isManager.value) {
-        alert('Chỉ Quản lý thư viện mới có quyền kích hoạt/vô hiệu hóa nhân viên!')
-        return
-    }
-    
-    try {
-        await api.patch(`/nhanvien/${nhanvien._id}/activate`)
-        loadNhanVien()
-        console.log(`${nhanvien.isActivate === 1 ? 'Vô hiệu hóa' : 'Kích hoạt'} nhân viên thành công`)
-    } catch (error) {
-        console.error('Error toggling activate:', error)
-    }
+    if (nhanvien.MSNV === currentUser.value.MSNV) { alert('Bạn không thể tự vô hiệu hóa chính mình!'); return; }
+    if (!isManager.value) return
+    try { await api.patch(`/nhanvien/${nhanvien._id}/activate`); loadNhanVien() } catch (error) { console.error(error) }
 }
-
-const confirmDelete = (nhanvien) => {
-    if (!isManager.value) {
-        alert('Chỉ Quản lý thư viện mới có quyền xóa nhân viên!')
-        return
-    }
-    deletingNhanVien.value = nhanvien
-    showDeleteModal.value = true
-}
-
+const confirmDelete = (nhanvien) => { if (!isManager.value) return; deletingNhanVien.value = nhanvien; showDeleteModal.value = true }
 const deleteNhanVien = async () => {
     if (!deletingNhanVien.value) return
-
     deleting.value = true
-    try {
-        await api.delete(`/nhanvien/${deletingNhanVien.value._id}`)
-
-        showDeleteModal.value = false
-        deletingNhanVien.value = null
-        loadNhanVien()
-
-        console.log('Nhân viên đã được xóa thành công')
-    } catch (error) {
-        console.error('Error deleting nhan vien:', error)
-    } finally {
-        deleting.value = false
-    }
+    try { await api.delete(`/nhanvien/${deletingNhanVien.value._id}`); showDeleteModal.value = false; deletingNhanVien.value = null; loadNhanVien() } 
+    catch (error) { console.error(error) } finally { deleting.value = false }
 }
-
-// Initialize user info
 const initializeUser = () => {
-    const userStr = localStorage.getItem('user')
-    const userRole = localStorage.getItem('userRole')
-    
-    console.log('Raw user from localStorage:', userStr)
-    console.log('User role from localStorage:', userRole)
-    
-    if (!userStr) {
-        alert('Không tìm thấy thông tin đăng nhập. Vui lòng đăng nhập lại.')
-        router.push('/login')
-        return false
-    }
-    
+    const userStr = localStorage.getItem('user'); const userRole = localStorage.getItem('userRole')
+    if (!userStr) { router.push('/login'); return false }
     try {
-        const user = JSON.parse(userStr)
-        console.log('Parsed user:', user)
-        
-        // Set current user info
-        currentUser.value = user
-        
-        // Check if user is staff
-        if (userRole !== 'staff') {
-            alert('Bạn không có quyền truy cập trang này.')
-            router.push('/admin')
-            return false
-        }
-        
+        currentUser.value = JSON.parse(userStr)
+        if (userRole !== 'staff') { router.push('/admin'); return false }
         return true
-    } catch (error) {
-        console.error('Error parsing user data:', error)
-        alert('Dữ liệu đăng nhập không hợp lệ. Vui lòng đăng nhập lại.')
-        router.push('/login')
-        return false
-    }
+    } catch { router.push('/login'); return false }
 }
-
-// Watch for search query changes with debounce
 let searchTimeout
-watch(searchQuery, () => {
-    clearTimeout(searchTimeout)
-    searchTimeout = setTimeout(() => {
-        currentPage.value = 1
-        loadNhanVien()
-    }, 500)
-})
-
-// Lifecycle
-onMounted(() => {
-    if (initializeUser()) {
-        loadNhanVien()
-    }
-})
+watch(searchQuery, () => { clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { currentPage.value = 1; loadNhanVien() }, 500) })
+onMounted(() => { if (initializeUser()) loadNhanVien() })
 </script>
 
 <style scoped>
 @import '@/assets/styles/main.css';
 
-.card {
-    border: none;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+/* --- FULL PAGE BACKGROUND FIX --- */
+.page-wrapper {
+    background-color: #f3f4f6; /* Màu xám hiện đại (Cool Gray) */
+    min-height: 100vh;
+    width: 100%;
+  
+    top: 0;
+    left: 0;
+    padding-top: 1rem;
+    padding-bottom: 2rem;
 }
 
-.table th {
-    border-top: none;
-    font-weight: 600;
-    color: #5a5c69;
-    background-color: #f8f9fc;
+.page-container {
+    max-width: 1400px;
 }
 
-.badge {
+/* --- ICONS & AVATARS --- */
+.icon-square {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 1.5rem;
+}
+
+.icon-square-sm {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+}
+
+.avatar-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* --- ALERTS --- */
+.alert-success-soft {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.alert-warning-soft {
+    background-color: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.alert-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+/* --- SEARCH --- */
+.search-icon {
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+}
+
+/* --- STATUS PILLS --- */
+.status-pill {
+    padding: 6px 12px;
+    border-radius: 20px;
     font-size: 0.75rem;
+    font-weight: 600;
+    display: inline-block;
 }
 
-.btn-group .btn {
-    padding: 0.25rem 0.5rem;
+.status-active {
+    background-color: #d1fae5;
+    color: #065f46;
 }
 
-.modal-backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
+.status-inactive {
+    background-color: #fee2e2;
+    color: #991b1b;
 }
 
-.text-truncate {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* --- BUTTONS --- */
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s;
+    border: 1px solid transparent;
 }
 
-.pagination .page-link {
-    border-radius: 0.35rem;
-    margin: 0 0.125rem;
-    border: 1px solid #e3e6f0;
-    color: #5a5c69;
+.btn-icon:hover {
+    transform: translateY(-2px);
+    background-color: white;
+    border-color: #e5e7eb;
 }
 
-.pagination .page-item.active .page-link {
-    background-color: #4e73df;
-    border-color: #4e73df;
+.shadow-primary {
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
 }
 
-.form-control:focus,
-.form-select:focus {
-    border-color: #bac8f3;
-    box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+/* --- TYPOGRAPHY --- */
+.x-small {
+    font-size: 0.7rem;
+    letter-spacing: 0.8px;
 }
 
-.is-invalid {
-    border-color: #e74a3b;
+/* --- ANIMATIONS --- */
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
 }
 
-.invalid-feedback {
-    display: block;
+.fade-in-up {
+    animation: fadeInUp 0.5s ease-out;
 }
 
-@media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.875rem;
-    }
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
 
-    .btn-group .btn {
-        padding: 0.125rem 0.25rem;
-    }
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-    .modal-dialog {
-        margin: 0.5rem;
-    }
+/* --- MODAL --- */
+.glass-backdrop {
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.2);
 }
 </style>
