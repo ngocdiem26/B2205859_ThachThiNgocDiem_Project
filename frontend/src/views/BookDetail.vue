@@ -12,12 +12,18 @@
       <!-- Book Image -->
       <div class="col-md-4 mb-4">
         <div class="book-image-container">
-          <img 
+          <!-- <img 
             src="/images/dacnhantam.jpg" 
             :alt="book.TenSach"
             class="img-fluid book-detail-image"
             @error="handleImageError"
-          >
+          > -->
+          <img 
+             :src="getBookImage(book)" 
+             class="img-fluid book-detail-image" 
+              :alt="book.TenSach"
+               @error="handleImageError"
+           >
           <div class="book-status mt-3">
             <span 
               class="badge fs-6 px-3 py-2"
@@ -163,7 +169,7 @@ export default {
     const book = ref(null)
     const relatedBooks = ref([])
     const loading = ref(false)
-
+    
     const loadBook = async () => {
       loading.value = true
       try {
@@ -181,6 +187,7 @@ export default {
         loading.value = false
       }
     }
+    
 
     const loadRelatedBooks = async () => {
       try {
@@ -208,13 +215,31 @@ export default {
       router.push({ name: 'BookDetail', params: { id: bookId } })
     }
 
-    const getBookImage = (bookData) => {
-      return bookData.image || '/images/book-placeholder.svg'
+    // const getBookImage = (bookData) => {
+    //   return bookData.image || '/images/book-placeholder.svg'
+    // }
+    const getBookImage = (book) => {
+    if (!book.AnhBia) {
+        return "/images/book-placeholder.svg";
     }
 
-    const handleImageError = (event) => {
-      event.target.src = '/images/book-placeholder.svg'
+    // Nếu là link online thì trả về luôn
+    if (book.AnhBia.startsWith('http')) {
+        return book.AnhBia;
     }
+
+    // Định nghĩa BASE_API_URL bằng đường dẫn cứng (như trong PublicHome.vue)
+    const BASE_API_URL = 'http://localhost:3000'; 
+
+    // Chuẩn hóa đường dẫn: bỏ dấu "/" dư ở đầu
+    let imagePath = book.AnhBia.replace(/^\/+/, "");
+
+    return `${BASE_API_URL}/${imagePath}`;
+};
+
+const handleImageError = (e) => {
+  e.target.src = "/images/book-placeholder.svg";
+};
 
     const formatPrice = (price) => {
       return new Intl.NumberFormat('vi-VN', {
