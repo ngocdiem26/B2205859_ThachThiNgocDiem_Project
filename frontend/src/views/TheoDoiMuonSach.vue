@@ -149,7 +149,7 @@
                             </div>
                             <div class="p-3 border-top bg-light d-flex justify-content-between align-items-center" v-if="totalItems > 0">
                                 <span class="text-muted small ms-2">
-                                    Hiển thị <strong>{{ startIndex + 1 }}-{{ Math.min(endIndex, filteredRecords.length) }}</strong> / <strong>{{ filteredRequests.length }}</strong> phiếu
+                                    Hiển thị <strong>{{ startIndex + 1 }}-{{ Math.min(endIndex, filteredRecords.length) }}</strong> / <strong>{{ filteredRecords.length }}</strong> phiếu
                                 </span>
                                 <nav>
                                     <ul class="pagination pagination-sm mb-0 shadow-sm rounded-pill overflow-hidden">
@@ -237,23 +237,47 @@
                             <p class="mb-0 text-muted small">Hẹn trả: {{ formatDate(returningRecord.NgayHenTra) }}</p>
                         </div>
 
-                        <div v-if="overdueDetails.isOverdue" class="alert alert-danger border-danger bg-danger-subtle mb-3 rounded-3 fade-in">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
-                                <h6 class="mb-0 fw-bold">Sách đã quá hạn!</h6>
+                        <div class="d-flex align-items-center mb-3 p-3 bg-warning-subtle border border-warning rounded-3 fade-in">
+                            <div class="form-check form-switch m-0 d-flex align-items-center">
+                                <input class="form-check-input me-3" type="checkbox" role="switch" id="isBookLostSwitch" v-model="isBookLost" style="width: 2.5rem; height: 1.5rem;">
+                                <label class="form-check-label text-danger fw-bold" for="isBookLostSwitch">
+                                    <i class="bi bi-exclamation-octagon-fill me-2"></i> SÁCH BỊ MẤT
+                                </label>
                             </div>
-                            <div class="d-flex justify-content-between small mb-1">
-                                <span>Số ngày quá hạn:</span>
-                                <strong>{{ overdueDetails.days }} ngày</strong>
+                            <div v-if="isBookLost" class="ms-auto small text-danger fw-medium">
+                                (Phải bồi thường)
                             </div>
-                            <div class="d-flex justify-content-between align-items-center border-top border-danger-subtle pt-2 mt-1">
-                                <span>Tiền phạt (5.000đ/ngày):</span>
-                                <strong class="fs-5 text-danger">{{ overdueDetails.penalty.toLocaleString('vi-VN') }} ₫</strong>
+                        </div>
+
+                        <div v-if="overdueDetails.isOverdue || isBookLost" class="card border-0 shadow-sm mb-3">
+                            <div class="card-header bg-light fw-bold text-primary small text-uppercase py-2">
+                                <i class="bi bi-cash me-1"></i> Tính toán thanh toán
                             </div>
+                            <ul class="list-group list-group-flush small">
+                                
+                                <li v-if="overdueDetails.isOverdue" class="list-group-item d-flex justify-content-between align-items-center bg-danger-subtle text-danger">
+                                    <span>Phạt quá hạn ({{ overdueDetails.days }} ngày @ 5.000₫/ngày):</span>
+                                    <strong class="fw-bold">{{ overdueDetails.penalty.toLocaleString('vi-VN') }} ₫</strong>
+                                </li>
+                                <li v-else-if="!isBookLost" class="list-group-item d-flex justify-content-between align-items-center bg-success-subtle text-success">
+                                    <span>Trạng thái:</span>
+                                    <strong class="fw-bold">Trả đúng hạn</strong>
+                                </li>
+
+                                <li v-if="isBookLost" class="list-group-item d-flex justify-content-between align-items-center bg-warning-subtle text-dark">
+                                    <span>Bồi thường sách (Đơn giá):</span>
+                                    <strong class="fw-bold">{{ bookPrice.toLocaleString('vi-VN') }} ₫</strong>
+                                </li>
+
+                                <li class="list-group-item d-flex justify-content-between align-items-center bg-primary-subtle text-primary py-3">
+                                    <span class="fs-6">TỔNG THANH TOÁN:</span>
+                                    <strong class="fs-5">{{ totalPayment.toLocaleString('vi-VN') }} ₫</strong>
+                                </li>
+                            </ul>
                         </div>
                         <div v-else class="alert alert-success border-success bg-success-subtle mb-3 d-flex align-items-center py-2 rounded-3 fade-in">
                             <i class="bi bi-check-circle-fill me-2"></i>
-                            <span class="small fw-bold">Trả sách đúng hạn. Không có phí phạt.</span>
+                            <span class="small fw-bold">Trả sách đúng hạn. Không có phí phạt hay bồi thường.</span>
                         </div>
 
                         <div class="mb-3">
@@ -374,110 +398,132 @@ const returningRecord = ref(null); const extendingRecord = ref(null); const view
 
 const overdueDetails = ref({ days: 0, penalty: 0, isOverdue: false });
 
+// NEW: Biến trạng thái mất sách và giá sách
+const isBookLost = ref(false);
+const bookPrice = ref(0);
+
+// Computed: Tổng thanh toán (Phí quá hạn + Bồi thường nếu mất sách)
+const totalPayment = computed(() => {
+  let total = overdueDetails.value.penalty;
+  if (isBookLost.value) {
+    total += bookPrice.value;
+  }
+  return total;
+});
+
 // Hàm tính tiền phạt cho modal và hiển thị nhanh
 const getQuickOverdueInfo = (dueDateStr, status) => {
-    if (status === 'Đã trả') return null;
-    const dueDate = new Date(dueDateStr);
-    const today = new Date();
-    dueDate.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0);
-    if (today > dueDate) {
-        const diffTime = Math.abs(today - dueDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const money = diffDays * 5000;
-        return { days: diffDays, money: money.toLocaleString('vi-VN') };
-    }
-    return null;
+  if (status === 'Đã trả') return null;
+  const dueDate = new Date(dueDateStr);
+  const today = new Date();
+  dueDate.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0);
+  if (today > dueDate) {
+    const diffTime = Math.abs(today - dueDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const money = diffDays * 5000;
+    return { days: diffDays, money: money.toLocaleString('vi-VN') };
+  }
+  return null;
 }
 
 const calculatePenalty = (dueDateString) => {
-    const dueDate = new Date(dueDateString);
-    const today = new Date();
-    dueDate.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0);
-    if (today > dueDate) {
-        const diffTime = Math.abs(today - dueDate);
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        const penaltyPerDay = 5000;
-        return { isOverdue: true, days: diffDays, penalty: diffDays * penaltyPerDay };
-    }
-    return { isOverdue: false, days: 0, penalty: 0 };
+  const dueDate = new Date(dueDateString);
+  const today = new Date();
+  dueDate.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0);
+  if (today > dueDate) {
+    const diffTime = Math.abs(today - dueDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const penaltyPerDay = 5000;
+    return { isOverdue: true, days: diffDays, penalty: diffDays * penaltyPerDay };
+  }
+  return { isOverdue: false, days: 0, penalty: 0 };
 };
 
 const getCurrentUser = () => { try { return JSON.parse(localStorage.getItem('user') || '{}') } catch { return {} } }
 const currentUser = getCurrentUser(); const currentStaffId = currentUser?.MSNV || currentUser?.msnv || 'NV001';
 
 const borrowForm = ref({ MaDocGia: '', MaSach: '', NgayHenTra: '', GhiChu: '', NhanVienMuon: currentStaffId });
-const returnForm = ref({ NhanVienTra: currentStaffId, GhiChu: '' });
+// Thêm trường isLost vào returnForm để gửi lên API (nếu API cần)
+const returnForm = ref({ NhanVienTra: currentStaffId, GhiChu: '', isLost: false }); 
 const extendForm = ref({ NgayHenTra: '', GhiChu: '' });
 const borrowErrors = ref({}); const returnErrors = ref({}); const extendErrors = ref({});
 
 const getCurrentStatusIcon = computed(() => {
-    switch (statusFilter.value) {
-        case 'Đang mượn': return 'bi-journal-bookmark-fill text-primary';
-        case 'Đã trả': return 'bi-check-circle-fill text-success';
-        case 'Quá hạn': return 'bi-exclamation-triangle-fill text-danger';
-        default: return 'bi-funnel-fill text-secondary';
-    }
+  switch (statusFilter.value) {
+    case 'Đang mượn': return 'bi-journal-bookmark-fill text-primary';
+    case 'Đã trả': return 'bi-check-circle-fill text-success';
+    case 'Quá hạn': return 'bi-exclamation-triangle-fill text-danger';
+    default: return 'bi-funnel-fill text-secondary';
+  }
 })
 const getCurrentStatusColor = computed(() => {
-    switch (statusFilter.value) {
-        case 'Đang mượn': return 'text-primary fw-bold';
-        case 'Đã trả': return 'text-success fw-bold';
-        case 'Quá hạn': return 'text-danger fw-bold';
-        default: return 'text-secondary fw-medium';
-    }
+  switch (statusFilter.value) {
+    case 'Đang mượn': return 'text-primary fw-bold';
+    case 'Đã trả': return 'text-success fw-bold';
+    case 'Quá hạn': return 'text-danger fw-bold';
+    default: return 'text-secondary fw-medium';
+  }
 })
 const setStatusFilter = (status) => { statusFilter.value = status; currentPage.value = 1; }
 const getStatusPillClass = (status) => {
-    switch (status) {
-        case 'Đang mượn': return 'bg-primary-subtle text-primary';
-        case 'Đã trả': return 'bg-success-subtle text-success';
-        case 'Quá hạn': return 'bg-danger-subtle text-danger';
-        default: return 'bg-secondary-subtle text-secondary';
-    }
+  switch (status) {
+    case 'Đang mượn': return 'bg-primary-subtle text-primary';
+    case 'Đã trả': return 'bg-success-subtle text-success';
+    case 'Quá hạn': return 'bg-danger-subtle text-danger';
+    default: return 'bg-secondary-subtle text-secondary';
+  }
 }
 
 const filteredRecords = computed(() => {
-  if (!Array.isArray(recordsList.value)) return []
-  let filtered = recordsList.value
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase().trim()
-    filtered = filtered.filter(record =>
-      record.MaTheoDoiMuonSach.toLowerCase().includes(query) ||
-      record.MaDocGia.toLowerCase().includes(query) ||
-      record.MaSach.toLowerCase().includes(query) ||
-      getReaderName(record).toLowerCase().includes(query) ||
-      getBookTitle(record).toLowerCase().includes(query)
-    )
-  }
-  if (statusFilter.value) filtered = filtered.filter(record => record.TrangThai === statusFilter.value)
-  return filtered
+ if (!Array.isArray(recordsList.value)) return []
+ let filtered = recordsList.value
+ if (searchQuery.value) {
+  const query = searchQuery.value.toLowerCase().trim()
+  filtered = filtered.filter(record =>
+   record.MaTheoDoiMuonSach.toLowerCase().includes(query) ||
+   record.MaDocGia.toLowerCase().includes(query) ||
+   record.MaSach.toLowerCase().includes(query) ||
+   getReaderName(record).toLowerCase().includes(query) ||
+   getBookTitle(record).toLowerCase().includes(query)
+  )
+ }
+ if (statusFilter.value) filtered = filtered.filter(record => record.TrangThai === statusFilter.value)
+ return filtered
 })
 
 const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value)
 const endIndex = computed(() => Math.min(startIndex.value + itemsPerPage.value, filteredRecords.value.length))
 const paginatedRecords = computed(() => filteredRecords.value.slice(startIndex.value, endIndex.value))
 const visiblePages = computed(() => {
-  const pages = []; const totalPages = Math.ceil(filteredRecords.value.length / itemsPerPage.value)
-  const start = Math.max(1, currentPage.value - 2); const end = Math.min(totalPages, currentPage.value + 2)
-  for (let i = start; i <= end; i++) { pages.push(i) }
-  return pages
+ const pages = []; const totalPages = Math.ceil(filteredRecords.value.length / itemsPerPage.value)
+ const start = Math.max(1, currentPage.value - 2); const end = Math.min(totalPages, currentPage.value + 2)
+ for (let i = start; i <= end; i++) { pages.push(i) }
+ return pages
 })
 const totalPages = computed(() => Math.ceil(filteredRecords.value.length / itemsPerPage.value))
 const availableBooks = computed(() => sachList.value.filter(sach => (sach.SoQuyenConLai || sach.SoQuyen) > 0))
 const tomorrow = computed(() => { const date = new Date(); date.setDate(date.getDate() + 1); return date.toISOString().split('T')[0] })
 
 const loadRecords = async () => {
-  loading.value = true
-  try {
-    const response = await api.get('/theodoimuonsach')
-    if (response.data.success) { recordsList.value = response.data.data || [] } else { recordsList.value = [] }
-  } catch (error) { recordsList.value = [] } finally { loading.value = false }
+ loading.value = true
+ try {
+  const response = await api.get('/theodoimuonsach')
+  if (response.data.success) { recordsList.value = response.data.data || [] } else { recordsList.value = [] }
+ } catch (error) { recordsList.value = [] } finally { loading.value = false }
 }
 const loadDocGia = async () => {
-  try { const response = await api.get('/docgia'); if (response.data.success) docGiaList.value = Array.isArray(response.data.data?.docgia || response.data.data) ? (response.data.data?.docgia || response.data.data) : [] } catch {}
+ try { const response = await api.get('/docgia'); if (response.data.success) docGiaList.value = Array.isArray(response.data.data?.docgia || response.data.data) ? (response.data.data?.docgia || response.data.data) : [] } catch {}
 }
 const loadSach = async () => {
-  try { const response = await api.get('/sach/available'); if (response.data.success) sachList.value = Array.isArray(response.data.data) ? response.data.data : [] } catch {}
+ try { 
+  // Load tất cả sách (không chỉ sách available) để lấy đơn giá
+  const response = await api.get('/sach?limit=9999'); 
+  if (response.data.success) {
+   // Dựa trên cấu trúc của SachNew.vue, nếu API trả về { data: { sach: [] } } hoặc { data: [] }
+   const apiData = response.data.data?.sach || response.data.data || [];
+   sachList.value = Array.isArray(apiData) ? apiData : [];
+  }
+ } catch {}
 }
 
 const handleSearch = () => { currentPage.value = 1 }
@@ -485,96 +531,156 @@ const clearSearch = () => { searchQuery.value = ''; statusFilter.value = ''; cur
 const goToPage = (page) => { if (page >= 1 && page <= totalPages.value) currentPage.value = page }
 
 const getReaderName = (record) => {
-  if (record.MaDocGia && typeof record.MaDocGia === 'object') return `${record.MaDocGia.HoLot} ${record.MaDocGia.Ten}`.trim()
-  const docgia = docGiaList.value.find(d => d.MaDocGia === record.MaDocGia)
-  return docgia ? `${docgia.HoLot} ${docgia.Ten}`.trim() : record.MaDocGia || 'N/A'
+ if (record.MaDocGia && typeof record.MaDocGia === 'object') return `${record.MaDocGia.HoLot} ${record.MaDocGia.Ten}`.trim()
+ const docgia = docGiaList.value.find(d => d.MaDocGia === record.MaDocGia)
+ return docgia ? `${docgia.HoLot} ${docgia.Ten}`.trim() : record.MaDocGia || 'N/A'
 }
 const getBookTitle = (record) => {
-  if (record.MaSach && typeof record.MaSach === 'object') return record.MaSach.TenSach
-  const sach = sachList.value.find(s => s.MaSach === record.MaSach)
-  return sach ? sach.TenSach : record.MaSach || 'N/A'
+ if (record.MaSach && typeof record.MaSach === 'object') return record.MaSach.TenSach
+ const sach = sachList.value.find(s => s.MaSach === record.MaSach)
+ return sach ? sach.TenSach : record.MaSach || 'N/A'
 }
+
+// NEW: Hàm lấy giá sách
+const getBookPrice = (record) => {
+  // Ưu tiên dùng MaSach nếu nó là object (đã populate)
+  const maSach = record.MaSach && typeof record.MaSach === 'object' ? record.MaSach.MaSach : record.MaSach;
+  const sach = sachList.value.find(s => s.MaSach === maSach);
+  // Đơn giá được lưu là string/number, chuyển sang number và trả về 0 nếu không tìm thấy
+  return Number(sach?.DonGia || 0);
+}
+
 const formatDate = (dateString) => { if (!dateString) return '-'; return new Date(dateString).toLocaleDateString('vi-VN') }
 const getDueDateClass = (record) => {
-  if (record.TrangThai === 'Đã trả') return ''
-  const today = new Date(); const dueDate = new Date(record.NgayHenTra)
-  if (dueDate < today) return 'text-danger fw-bold'
-  else if (dueDate.getTime() - today.getTime() <= 24 * 60 * 60 * 1000) return 'text-warning fw-bold'
-  return ''
+ if (record.TrangThai === 'Đã trả') return ''
+ const today = new Date(); const dueDate = new Date(record.NgayHenTra)
+ if (dueDate < today) return 'text-danger fw-bold'
+ else if (dueDate.getTime() - today.getTime() <= 24 * 60 * 60 * 1000) return 'text-warning fw-bold'
+ return ''
 }
 
 const showBorrowModal = () => { resetBorrowForm(); showBorrowModalState.value = true }
 const closeBorrowModal = () => { showBorrowModalState.value = false; resetBorrowForm() }
 const resetBorrowForm = () => { borrowForm.value = { MaDocGia: '', MaSach: '', NgayHenTra: '', GhiChu: '', NhanVienMuon: currentStaffId }; borrowErrors.value = {} }
 const validateBorrowForm = () => {
-    borrowErrors.value = {}
-    if (!borrowForm.value.MaDocGia) borrowErrors.value.MaDocGia = 'Vui lòng chọn độc giả'
-    if (!borrowForm.value.MaSach) borrowErrors.value.MaSach = 'Vui lòng chọn sách'
-    if (!borrowForm.value.NgayHenTra) borrowErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả'
-    return Object.keys(borrowErrors.value).length === 0
+  borrowErrors.value = {}
+  if (!borrowForm.value.MaDocGia) borrowErrors.value.MaDocGia = 'Vui lòng chọn độc giả'
+  if (!borrowForm.value.MaSach) borrowErrors.value.MaSach = 'Vui lòng chọn sách'
+  if (!borrowForm.value.NgayHenTra) borrowErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả'
+  return Object.keys(borrowErrors.value).length === 0
 }
 const borrowBook = async () => {
-    if (!validateBorrowForm()) return
-    borrowing.value = true
-    try { await api.post('/theodoimuonsach/muon', borrowForm.value); closeBorrowModal(); await loadRecords(); } 
-    catch (error) { if (error.response?.data?.errors) borrowErrors.value = error.response.data.errors } finally { borrowing.value = false }
+  if (!validateBorrowForm()) return
+  borrowing.value = true
+  try { await api.post('/theodoimuonsach/muon', borrowForm.value); closeBorrowModal(); await loadRecords(); } 
+  catch (error) { if (error.response?.data?.errors) borrowErrors.value = error.response.data.errors } finally { borrowing.value = false }
 }
 
 const showReturnModal = (record) => {
-    returningRecord.value = record;
-    overdueDetails.value = calculatePenalty(record.NgayHenTra);
-    let autoNote = '';
-    if (overdueDetails.value.isOverdue) {
-        autoNote = `[QUÁ HẠN] Trễ ${overdueDetails.value.days} ngày. Phạt: ${overdueDetails.value.penalty.toLocaleString('vi-VN')}đ.`;
-    }
-    returnForm.value = { NhanVienTra: currentStaffId, GhiChu: autoNote };
-    returnErrors.value = {};
-    showReturnModalState.value = true;
+  returningRecord.value = record;
+  overdueDetails.value = calculatePenalty(record.NgayHenTra);
+  
+  // NEW: Reset và lấy giá sách
+  isBookLost.value = false; // Reset trạng thái mất sách khi mở modal
+  bookPrice.value = getBookPrice(record);
+  
+  // Thiết lập ghi chú ban đầu (có thể được cập nhật bởi watcher)
+  let autoNote = '';
+  if (overdueDetails.value.isOverdue) {
+    autoNote += `[QUÁ HẠN] Trễ ${overdueDetails.value.days} ngày. Phạt: ${overdueDetails.value.penalty.toLocaleString('vi-VN')}đ.`;
+  }
+  
+  returnForm.value = { NhanVienTra: currentStaffId, GhiChu: autoNote, isLost: false };
+  returnErrors.value = {};
+  showReturnModalState.value = true;
 }
-const closeReturnModal = () => { showReturnModalState.value = false; returningRecord.value = null }
+
+// NEW: Watch isBookLost để cập nhật ghi chú và returnForm.isLost
+watch(isBookLost, (newValue) => {
+  returnForm.value.isLost = newValue;
+  let note = '';
+  if (overdueDetails.value.isOverdue) {
+    note += `[QUÁ HẠN] Trễ ${overdueDetails.value.days} ngày. Phạt: ${overdueDetails.value.penalty.toLocaleString('vi-VN')}₫.`;
+  }
+  if (newValue) {
+    // Cập nhật giá trị khi isBookLost thay đổi
+    note += `\n[MẤT SÁCH] Bồi thường: ${bookPrice.value.toLocaleString('vi-VN')}₫. Tổng thanh toán: ${totalPayment.value.toLocaleString('vi-VN')}₫.`;
+  } else if (note) {
+    // Nếu không mất sách nhưng có quá hạn, xóa dòng ghi chú mất sách nếu có
+    note = note.replace(/\n\[MẤT SÁCH\].*/, '').trim();
+  }
+  returnForm.value.GhiChu = note.trim();
+});
+
+
+const closeReturnModal = () => { 
+  showReturnModalState.value = false; 
+  returningRecord.value = null; 
+  isBookLost.value = false; 
+  bookPrice.value = 0; // Reset giá sách
+  returnForm.value = { NhanVienTra: currentStaffId, GhiChu: '', isLost: false }; // Reset form
+}
+
 const returnBook = async () => {
-    returning.value = true
-    try { await api.put(`/theodoimuonsach/${returningRecord.value.MaTheoDoiMuonSach}/tra`, returnForm.value); closeReturnModal(); await loadRecords() } 
-    catch (e) { console.error(e) } finally { returning.value = false }
+  returning.value = true
+  // NEW: Cập nhật isLost và totalPayment trong payload trước khi gửi
+  const payload = { 
+    ...returnForm.value, 
+    isLost: isBookLost.value,
+    totalPayment: totalPayment.value
+  }
+
+  try { 
+    await api.put(`/theodoimuonsach/${returningRecord.value.MaTheoDoiMuonSach}/tra`, payload); 
+    closeReturnModal(); 
+    await loadRecords() 
+  } 
+  catch (e) { 
+    console.error(e); 
+    alert("Lỗi khi hoàn tất trả sách! Vui lòng kiểm tra kết nối API.");
+  } 
+  finally { 
+    returning.value = false 
+  }
 }
 
 // --- LOGIC CẬP NHẬT NGÀY GIA HẠN (Đã sửa lỗi) ---
 const showExtendModal = (record) => { 
-    extendingRecord.value = record; 
-    // Gợi ý ngày trả mới (mặc định +7 ngày)
-    const currentDueDate = new Date(record.NgayHenTra);
-    currentDueDate.setDate(currentDueDate.getDate() + 7);
-    const defaultNewDate = currentDueDate.toISOString().split('T')[0];
-    
-    extendForm.value = { NgayHenTra: defaultNewDate, GhiChu: '' }; 
-    extendErrors.value = {}; 
-    showExtendModalState.value = true 
+  extendingRecord.value = record; 
+  // Gợi ý ngày trả mới (mặc định +7 ngày)
+  const currentDueDate = new Date(record.NgayHenTra);
+  currentDueDate.setDate(currentDueDate.getDate() + 7);
+  const defaultNewDate = currentDueDate.toISOString().split('T')[0];
+  
+  extendForm.value = { NgayHenTra: defaultNewDate, GhiChu: '' }; 
+  extendErrors.value = {}; 
+  showExtendModalState.value = true 
 }
 const closeExtendModal = () => { showExtendModalState.value = false; extendingRecord.value = null }
 const validateExtendForm = () => {
-    extendErrors.value = {};
-    if (!extendForm.value.NgayHenTra) extendErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả mới';
-    return Object.keys(extendErrors.value).length === 0;
+  extendErrors.value = {};
+  if (!extendForm.value.NgayHenTra) extendErrors.value.NgayHenTra = 'Vui lòng chọn ngày hẹn trả mới';
+  return Object.keys(extendErrors.value).length === 0;
 }
 const extendDueDate = async () => {
-    if (!validateExtendForm()) return;
-    extending.value = true;
-    try {
-        await api.put(`/theodoimuonsach/${extendingRecord.value.MaTheoDoiMuonSach}/giahan`, extendForm.value);
-        closeExtendModal();
-        await loadRecords();
-        alert("Gia hạn thành công!");
-    } catch (error) {
-        console.error("Lỗi gia hạn:", error);
-        alert("Lỗi khi gia hạn sách.");
-    } finally {
-        extending.value = false;
-    }
+  if (!validateExtendForm()) return;
+  extending.value = true;
+  try {
+    await api.put(`/theodoimuonsach/${extendingRecord.value.MaTheoDoiMuonSach}/giahan`, extendForm.value);
+    closeExtendModal();
+    await loadRecords();
+    alert("Gia hạn thành công!");
+  } catch (error) {
+    console.error("Lỗi gia hạn:", error);
+    alert("Lỗi khi gia hạn sách.");
+  } finally {
+    extending.value = false;
+  }
 }
 // --------------------------------------------------
 
-const viewDetails = (record) => { viewingRecord.value = record; showDetailsModal.value = true }
-const closeDetailsModal = () => { showDetailsModal.value = false; viewingRecord.value = null }
+const viewDetails = (record) => { viewingRecord.value = record; showDetailsModalState.value = true }
+const closeDetailsModal = () => { showDetailsModalState.value = false; viewingRecord.value = null }
 const showReturnModalFromDetails = () => { const rec = viewingRecord.value; closeDetailsModal(); showReturnModal(rec) }
 const showExtendModalFromDetails = () => { const rec = viewingRecord.value; closeDetailsModal(); showExtendModal(rec) }
 
@@ -586,11 +692,11 @@ onMounted(async () => { await Promise.all([loadDocGia(), loadSach()]); await loa
 @import '@/assets/styles/main.css';
 
 .page-wrapper {
-    background-color: #f3f4f6;
-    min-height: 100vh;
-    width: 100%;
-    margin: -24px; padding: 24px; width: calc(100% + 48px);
-    display: flex; flex-direction: column;
+  background-color: #f3f4f6;
+  min-height: 100vh;
+  width: 100%;
+  margin: -24px; padding: 24px; width: calc(100% + 48px);
+  display: flex; flex-direction: column;
 }
 .page-container { max-width: 1400px; margin: 0 auto; width: 100%; }
 
@@ -609,6 +715,8 @@ onMounted(async () => { await Promise.all([loadDocGia(), loadSach()]); await loa
 .bg-success-subtle { background-color: #dcfce7; color: #15803d; }
 .bg-danger-subtle { background-color: #fee2e2; color: #b91c1c; }
 .bg-secondary-subtle { background-color: #f3f4f6; color: #4b5563; }
+/* Thêm style cho warning subtle */
+.bg-warning-subtle { background-color: #fffbeb; }
 
 .search-icon { left: 20px; top: 50%; transform: translateY(-50%); z-index: 5; }
 .form-control:focus, .form-select:focus { box-shadow: none; background-color: #fff; border: 1px solid #4f46e5; }
