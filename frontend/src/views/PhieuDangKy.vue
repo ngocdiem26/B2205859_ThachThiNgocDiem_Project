@@ -15,7 +15,7 @@
                             <p class="text-secondary small ms-1 mb-0 mt-1">Duyệt các yêu cầu mượn sách từ độc giả</p>
                         </div>
                         <div>
-                            <button class="btn btn-light text-primary fw-bold shadow-sm hover-lift" @click="loadPendingRequests" :disabled="loading">
+                            <button class="btn btn-light text-primary fw-bold shadow-sm hover-lift" @click="loadPendingAndActiveRequests" :disabled="loading">
                                 <i class="bi bi-arrow-clockwise me-2" :class="{ 'spin-icon': loading }"></i>
                                 {{ loading ? 'Đang tải...' : 'Làm mới dữ liệu' }}
                             </button>
@@ -193,9 +193,12 @@
                                             <td class="text-end pe-4">
                                                 <div class="d-inline-flex gap-2">
                                                     <button class="btn btn-success btn-sm rounded-pill px-3 shadow-sm hover-scale" 
-                                                        @click="approveRequest(request)" :disabled="processing">
+                                                        @click="approveRequest(request)" 
+                                                        :disabled="processing || hasOverdueBooks(request.MaDocGia) || getBorrowedCount(request.MaDocGia) >= MAX_BORROW_LIMIT"
+                                                        :title="getApprovalTitle(request)">
                                                         <i class="bi bi-check-lg me-1"></i>Duyệt
                                                     </button>
+
                                                     <button class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm hover-scale" 
                                                         @click="rejectRequest(request)" :disabled="processing">
                                                         <i class="bi bi-x-lg me-1"></i>Từ chối
@@ -364,7 +367,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import api from '../utils/axios.js'
 
 // Reactive data
-const requestsList = ref([])
+const requestsList = ref([]) // Phiếu chờ duyệt
+const allActiveBorrows = ref([]) // Phiếu đang mượn/quá hạn
 const docGiaList = ref([])
 const sachList = ref([])
 const loading = ref(false)
@@ -375,11 +379,48 @@ const dateFilter = ref('')
 const currentPage = ref(1)
 const itemsPerPage = ref(10)
 
+// Constants
+const MAX_BORROW_LIMIT = 4;
+
 // Modal states
 const showDetailsModal = ref(false)
 const viewingRequest = ref(null)
 
-// --- NEW: Computed for Custom Dropdown ---
+// --- Logic kiểm tra MƯỢN/QUÁ HẠN ---
+
+const hasOverdueBooks = (readerId) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Đặt giờ về 0h để so sánh ngày chính xác
+
+    return allActiveBorrows.value.some(record => 
+        record.MaDocGia === readerId && 
+        new Date(record.NgayHenTra) < today
+    );
+}
+
+const getBorrowedCount = (readerId) => {
+    // Đếm tất cả các phiếu mượn đang hoạt động (Đang mượn, Quá hạn)
+    return allActiveBorrows.value.filter(record => 
+        record.MaDocGia === readerId
+    ).length;
+}
+
+const getApprovalTitle = (request) => {
+    const readerId = request.MaDocGia;
+    const currentBorrowedCount = getBorrowedCount(readerId);
+    
+    if (hasOverdueBooks(readerId)) {
+        return 'Độc giả có sách quá hạn, không thể duyệt!';
+    }
+    
+    if (currentBorrowedCount >= MAX_BORROW_LIMIT) {
+        return `Độc giả đã đạt giới hạn mượn ${MAX_BORROW_LIMIT} cuốn (Đang mượn: ${currentBorrowedCount} cuốn).`;
+    }
+
+    return 'Duyệt phiếu đăng ký này';
+}
+
+// --- Computed for Custom Dropdown ---
 const getCurrentSortLabel = computed(() => {
     switch (sortOrder.value) {
         case 'newest': return 'Mới nhất'
@@ -454,12 +495,31 @@ const visiblePages = computed(() => {
 
 // Methods
 const loadPendingRequests = async () => {
-    loading.value = true
     try {
         const response = await api.get('/theodoimuonsach?onlyPending=true')
         if (response.data.success) requestsList.value = response.data.data || []
-    } catch (error) { console.error(error); requestsList.value = [] } 
-    finally { loading.value = false }
+    } catch (error) { console.error("Lỗi tải phiếu chờ duyệt:", error); requestsList.value = [] } 
+}
+
+const loadActiveBorrows = async () => {
+    try {
+        // Tải các phiếu chưa trả (TrangThai = 'Đang mượn' hoặc 'Quá hạn')
+        const response = await api.get('/theodoimuonsach/active'); 
+        if (response.data.success) {
+            allActiveBorrows.value = response.data.data || [];
+        } else {
+            allActiveBorrows.value = [];
+        }
+    } catch (error) {
+        console.error("Lỗi khi tải phiếu mượn đang hoạt động:", error);
+        allActiveBorrows.value = [];
+    }
+}
+
+const loadPendingAndActiveRequests = async () => {
+    loading.value = true
+    await Promise.all([loadPendingRequests(), loadActiveBorrows()])
+    loading.value = false
 }
 
 const loadReferenceData = async () => {
@@ -512,20 +572,56 @@ const getRandomColorClass = (name) => {
 }
 
 const approveRequest = async (request) => {
-    if (!confirm(`Duyệt phiếu ${request.MaTheoDoiMuonSach}?`)) return
+    const readerId = request.MaDocGia;
+    const currentBorrowedCount = getBorrowedCount(readerId);
+    
+    if (hasOverdueBooks(readerId)) {
+        alert('Duyệt thất bại: Độc giả còn sách quá hạn, không thể duyệt mượn thêm!');
+        return;
+    }
+    
+    if (currentBorrowedCount >= MAX_BORROW_LIMIT) {
+        alert(`Duyệt thất bại: Độc giả đã đạt giới hạn mượn ${MAX_BORROW_LIMIT} cuốn sách (đang mượn: ${currentBorrowedCount}).`);
+        return;
+    }
+
+    if (!confirm(`Duyệt phiếu ${request.MaTheoDoiMuonSach} của độc giả ${getReaderName(request)}?`)) return
+    
     processing.value = true
     try {
         const response = await api.post(`/theodoimuonsach/${request.MaTheoDoiMuonSach}/approve`)
-        if (response.data.success) { alert('Thành công!'); await loadPendingRequests() } else { alert(response.data.message) }
-    } catch (error) { alert('Lỗi xảy ra') } finally { processing.value = false }
+        if (response.data.success) { 
+            alert('Duyệt thành công! Sách đã được chuyển sang trạng thái "Đang mượn".'); 
+            // Tải lại cả phiếu chờ duyệt và phiếu đang hoạt động
+            await loadPendingAndActiveRequests(); 
+        } else { 
+            alert(`Lỗi duyệt: ${response.data.message}`); 
+        }
+    } catch (error) { 
+        console.error("Lỗi khi duyệt:", error);
+        alert('Lỗi xảy ra trong quá trình duyệt phiếu.'); 
+    } finally { 
+        processing.value = false 
+    }
 }
+
 const rejectRequest = async (request) => {
     if (!confirm(`Từ chối phiếu ${request.MaTheoDoiMuonSach}?`)) return
     processing.value = true
     try {
         const response = await api.delete(`/theodoimuonsach/${request.MaTheoDoiMuonSach}/reject`)
-        if (response.data.success) { alert('Thành công!'); await loadPendingRequests() } else { alert(response.data.message) }
-    } catch (error) { alert('Lỗi xảy ra') } finally { processing.value = false }
+        if (response.data.success) { 
+            alert('Từ chối thành công!'); 
+            await loadPendingAndActiveRequests(); 
+        } else { 
+            alert(response.data.message); 
+        }
+    } catch (error) { 
+        console.error("Lỗi khi từ chối:", error);
+        alert('Lỗi xảy ra'); 
+    } finally { 
+        processing.value = false 
+    }
 }
 
 const viewDetails = (request) => { viewingRequest.value = request; showDetailsModal.value = true }
@@ -537,8 +633,8 @@ const clearFilters = () => { searchQuery.value = ''; sortOrder.value = 'newest';
 
 watch([searchQuery, sortOrder, dateFilter], () => { currentPage.value = 1 })
 onMounted(async () => {
-    // Phải dùng Promise.all để đợi tải xong danh sách tham chiếu
-    await Promise.all([loadReferenceData(), loadPendingRequests()])
+    // Tải cả danh sách tham chiếu, phiếu chờ duyệt và phiếu đang hoạt động
+    await Promise.all([loadReferenceData(), loadPendingRequests(), loadActiveBorrows()])
 })
 </script>
 

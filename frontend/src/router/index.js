@@ -34,6 +34,8 @@ const routes = [
     component: PublicLayout,
     children: [
       { path: "", name: "PublicHome", component: PublicHome },
+       // ⭐⭐ THÊM ROUTE NÀY để fix lỗi
+  { path: "categories", name: "Categories", component: BooksList },
       { path: "categories/:id", name: "CategoryBooks", component: BooksList },
       { path: "books", name: "Books", component: BooksList },
       { path: "books/:id", name: "BookDetail", component: BookDetail },
@@ -49,7 +51,7 @@ const routes = [
   // Auth routes (standalone)
   { path: "/login", name: "Login", component: Login },
   { path: "/register", name: "Register", component: Register },
-
+  
   // Admin routes with layout
   {
     path: "/admin",
@@ -74,6 +76,12 @@ const routes = [
       { path: "thongke", name: "ThongKe", component: Dashboard },
       { path: "settings", name: "Settings", component: Dashboard },
       { path: "profile", name: "AdminProfile", component: Dashboard },
+      { 
+        path: "categories", 
+        name: "Categories", 
+        component: BooksList 
+      },
+
     ],
   },
 ];
@@ -100,6 +108,7 @@ router.beforeEach((to, from, next) => {
     "/help",
     "/privacy",
     "/terms",
+    "/categories",   // ✔ GIỜ route này đã tồn tại
   ];
 
   // Routes that require reader authentication

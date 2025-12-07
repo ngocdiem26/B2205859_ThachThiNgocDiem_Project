@@ -1,336 +1,318 @@
 <template>
-    <header class="navbar navbar-expand-lg library-header">
-        <div class="container-fluid px-4">
-            <router-link to="/admin" class="navbar-brand d-flex align-items-center">
-                <div class="logo-wrapper">
-                    <img class="logo" src="/images/logo.jpg" alt="Logo" @error="$event.target.style.display='none'">
-                </div>
-                <div class="brand-text ms-3">
-                    <h1 class="m-0">Quản lý thư viện</h1>
-                    <span class="subtitle">Administrator Portal</span>
-                </div>
-            </router-link>
+  <header class="app-header">
+    <div class="header-content container-fluid">
+      
+      <div class="d-flex align-items-center gap-3">
+        <button class="btn-icon d-lg-none" @click="toggleMobileMenu">
+          <i class="bi bi-list fs-3 text-dark"></i>
+        </button>
 
-            <button class="navbar-toggler custom-toggler" type="button" @click="toggleMobileMenu" aria-label="Toggle navigation">
-                <span class="burger-icon">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </span>
-            </button>
-
-            <div class="navbar-nav ms-auto align-items-center" :class="{ 'show-mobile': showMobileMenu }">
-                <div class="nav-item dropdown user-dropdown position-relative">
-                    <a class="nav-link dropdown-toggle d-flex align-items-center gap-3" href="#" role="button"
-                        @click.prevent="toggleUserMenu" aria-expanded="false">
-                        
-                        <div class="user-info d-none d-md-block text-end">
-                            <span class="d-block fw-bold text-white user-name">
-                                {{ displayUser.HoTenNV || 'Admin' }}
-                            </span>
-                            <span class="d-block text-white-50 small user-role">
-                                {{ displayUser.ChucVu || 'Quản trị viên' }}
-                            </span>
-                        </div>
-
-                        <div class="avatar-circle">
-                            <span class="avatar-initials">
-                                {{ (displayUser.HoTenNV || 'A').charAt(0).toUpperCase() }}
-                            </span>
-                            <div class="status-indicator"></div>
-                        </div>
-                    </a>
-
-                    <transition name="dropdown-anim">
-                        <ul class="dropdown-menu dropdown-menu-end custom-dropdown" :class="{ show: showUserMenu }">
-                            <div class="dropdown-header d-md-none text-center pb-2 border-bottom mb-2">
-                                <strong>{{ displayUser.HoTenNV || 'Admin' }}</strong>
-                                <div class="small text-muted">{{ displayUser.ChucVu || 'Quản trị viên' }}</div>
-                            </div>
-                            <li>
-                                <router-link to="/admin/profile" class="dropdown-item">
-                                    <div class="icon-box bg-light-primary text-primary">
-                                        <i class="fas fa-user"></i>
-                                    </div>
-                                    <span>Thông tin cá nhân</span>
-                                </router-link>
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item" @click="handleChangePassword">
-                                    <div class="icon-box bg-light-warning text-warning">
-                                        <i class="fas fa-key"></i>
-                                    </div>
-                                    <span>Đổi mật khẩu</span>
-                                </a>
-                            </li>
-                            <li>
-                                <hr class="dropdown-divider my-2">
-                            </li>
-                            <li>
-                                <a href="#" class="dropdown-item logout-item" @click="handleLogout">
-                                    <div class="icon-box bg-light-danger text-danger">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                    </div>
-                                    <span>Đăng xuất</span>
-                                </a>
-                            </li>
-                        </ul>
-                    </transition>
-                </div>
-            </div>
+        <div class="d-flex flex-column" style="margin-left: 65px;">
+          <div class="text-muted x-small text-uppercase fw-bold ls-1 mb-1">
+            {{ currentDate }}
+          </div>
+          <h5 class="mb-0 fw-bolder text-dark d-flex align-items-center">
+             Dashboard
+          </h5>
         </div>
-    </header>
+      </div>
+
+      <div class="d-flex align-items-center gap-3">
+
+
+        <div class="dropdown user-dropdown">
+          <a class="d-flex align-items-center gap-3 text-decoration-none cursor-pointer p-1 rounded-pill hover-bg" 
+             href="#" @click.prevent="toggleUserMenu" data-bs-toggle="dropdown" aria-expanded="false">
+            
+            <div class="text-end d-none d-md-block lh-1">
+              <div class="fw-bold text-dark small mb-1">
+                {{ user?.HoTenNV || 'Administrator' }}
+              </div>
+              <div class="x-small text-muted text-uppercase fw-bold">
+                {{ user?.ChucVu || 'Quản trị viên' }}
+              </div>
+            </div>
+
+            <div class="avatar-wrapper">
+              <div class="avatar-img gradient-bg">
+                <span>{{ (user?.HoTenNV || 'A').charAt(0).toUpperCase() }}</span>
+              </div>
+              
+              <div class="status-indicator"></div>
+            </div>
+          </a>
+
+          <transition name="dropdown-fade">
+            <ul class="dropdown-menu dropdown-menu-end custom-menu shadow-lg border-0 rounded-4 mt-3 p-2" :class="{ show: showUserMenu }">
+              <li class="d-md-none px-3 py-3 border-bottom mb-2 bg-light rounded-top-3">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="avatar-img gradient-bg" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                    <span>{{ (user?.HoTenNV || 'A').charAt(0).toUpperCase() }}</span>
+                  </div>
+                  <div>
+                    <div class="fw-bold text-dark">{{ user?.HoTenNV || 'Admin' }}</div>
+                    <small class="text-muted">{{ user?.ChucVu || 'Admin' }}</small>
+                  </div>
+                </div>
+              </li>
+
+              <li>
+                <router-link to="/admin/profile" class="dropdown-item rounded-3 py-2 d-flex align-items-center">
+                  <div class="icon-sm bg-primary-subtle text-primary me-3 rounded-circle">
+                    <i class="bi bi-person-fill"></i>
+                  </div>
+                  <span>Hồ sơ cá nhân</span>
+                </router-link>
+              </li>
+              <li>
+                <a href="#" class="dropdown-item rounded-3 py-2 d-flex align-items-center" @click.prevent>
+                  <div class="icon-sm bg-info-subtle text-info me-3 rounded-circle">
+                    <i class="bi bi-shield-lock-fill"></i>
+                  </div>
+                  <span>Đổi mật khẩu</span>
+                </a>
+              </li>
+              <li><hr class="dropdown-divider my-2 border-light"></li>
+              <li>
+                <a href="#" class="dropdown-item rounded-3 py-2 d-flex align-items-center text-danger" @click="handleLogout">
+                  <div class="icon-sm bg-danger-subtle text-danger me-3 rounded-circle">
+                    <i class="bi bi-box-arrow-right"></i>
+                  </div>
+                  <span class="fw-medium">Đăng xuất</span>
+                </a>
+              </li>
+            </ul>
+          </transition>
+        </div>
+      </div>
+    </div>
+  </header>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuth } from '../composables/useAuth.js'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
-const router = useRouter()
-const { currentUser, logout } = useAuth() // currentUser có thể bị undefined lúc đầu
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false
+  }
+})
 
-const showUserMenu = ref(false)
-const showMobileMenu = ref(false)
+const emit = defineEmits(['update:modelValue', 'nav-click'])
 
-// --- FIX LỖI SẬP TRANG TẠI ĐÂY ---
-const displayUser = computed(() => {
-    // 1. Kiểm tra an toàn: Nếu currentUser tồn tại VÀ là ref (có .value)
-    if (currentUser && currentUser.value) {
-        return currentUser.value;
-    }
-    
-    // 2. Nếu currentUser là object thường (không phải ref) và có dữ liệu
-    if (currentUser && !currentUser.value && Object.keys(currentUser).length > 0) {
-        return currentUser;
-    }
+const route = useRoute()
+const collapsed = ref(props.modelValue)
+const user = ref(null)
 
-    // 3. Fallback: Lấy trực tiếp từ LocalStorage (Đây là cách chắc chắn nhất để hiển thị ngay)
-    try {
-        const stored = localStorage.getItem('user');
-        if (stored) {
-            return JSON.parse(stored);
-        }
-    } catch (e) {
-        console.error("Lỗi đọc user từ localStorage", e);
-    }
 
-    // 4. Trả về rỗng nếu không tìm thấy gì để không gây lỗi
-    return {};
-});
-
-const toggleUserMenu = () => {
-    showUserMenu.value = !showUserMenu.value
-}
-
-const toggleMobileMenu = () => {
-    showMobileMenu.value = !showMobileMenu.value
-}
-
-const handleLogout = async () => {
-    try {
-        await logout()
-        router.push('/login')
-    } catch (error) {
-        console.error('Logout error:', error)
-    }
-}
-
-const handleChangePassword = () => {
-    console.log('Change password clicked')
-}
-
-// Đóng dropdown khi click ra ngoài
-const handleClickOutside = (event) => {
-    if (!event.target.closest('.dropdown') && !event.target.closest('.navbar-toggler')) {
-        showUserMenu.value = false
-    }
-}
-
+// Load user info from localStorage
 onMounted(() => {
-    document.addEventListener('click', handleClickOutside)
+  const userData = localStorage.getItem('user')
+  if (userData) {
+    try {
+      user.value = JSON.parse(userData)
+    } catch (error) {
+      console.error('Error parsing user data:', error)
+    }
+  }
+})
+// Date display formatter
+const currentDate = computed(() => {
+  const date = new Date()
+  return new Intl.DateTimeFormat('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).format(date)
 })
 
-onUnmounted(() => {
-    document.removeEventListener('click', handleClickOutside)
-})
+const toggleSidebar = () => {
+  collapsed.value = !collapsed.value
+  emit('update:modelValue', collapsed.value)
+}
+
+const isActive = (path) => {
+  if (path === '/admin') {
+    return route.path === '/admin'
+  }
+  return route.path.startsWith(path)
+}
+
+const handleNavClick = () => {
+  emit('nav-click')
+}
 </script>
 
 <style scoped>
-/* --- Header Background & Layout --- */
-.library-header {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
-    padding: 0.8rem 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-    position: relative;
-    z-index: 1000;
+/* --- MAIN HEADER STYLE --- */
+.app-header {
+  height: 80px; /* Tăng chiều cao một chút cho thoáng */
+  background-color: rgba(255, 255, 255, 0.8); /* Nền trắng mờ */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  /* Z-index thấp hơn Sidebar (thường là 1000) để Sidebar đè lên khi mở trên mobile */
+  z-index: 900; 
+  transition: all 0.3s ease;
+  /* Đường viền dưới tinh tế */
+  border-bottom: 1px solid rgba(0,0,0,0.03);
 }
 
-/* --- Branding --- */
-.logo-wrapper {
-    width: 42px;
-    height: 42px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+.header-content {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
 }
 
-/* .logo {
-    max-height: 28px;
-    object-fit: contain;
-} */
-.logo {
+/* --- TYPOGRAPHY --- */
+.ls-1 { letter-spacing: 0.5px; }
+.x-small { font-size: 0.7rem; }
+.lh-1 { line-height: 1.3; }
+
+/* --- ACTION BUTTONS --- */
+.btn-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background-color: #fff;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  cursor: pointer;
+}
+
+.btn-icon:hover, .btn-icon[aria-expanded="true"] {
+  background-color: #fff;
+  color: #4361ee;
+  box-shadow: 0 4px 12px rgba(67, 97, 238, 0.15);
+  transform: translateY(-2px);
+}
+
+/* --- USER PROFILE --- */
+.hover-bg {
+  transition: background-color 0.2s;
+}
+.hover-bg:hover {
+  background-color: rgba(0,0,0,0.02);
+}
+
+.avatar-wrapper {
+  position: relative;
+  padding: 3px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transition: all 0.3s;
+}
+
+.user-dropdown:hover .avatar-wrapper {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(67, 97, 238, 0.2);
+}
+
+.avatar-img {
   width: 40px;
   height: 40px;
-  /* object-fit: contain; */
-  object-fit: cover; /* Dùng cover để ảnh lấp đầy khung tròn đẹp hơn */
-  border-radius: 50%; /* <--- Dòng này biến hình vuông thành hình tròn */
-  
-  /* (Tùy chọn) Thêm viền nhẹ nếu logo bị chìm vào nền trắng */
-  border: 1px solid #eee;
-
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 800;
+  font-size: 1.2rem;
 }
 
-.brand-text h1 {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #fff;
-    margin-bottom: 0;
-    line-height: 1.2;
-}
-
-.brand-text .subtitle {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 300;
-    letter-spacing: 0.5px;
-}
-
-/* --- Avatar & User Area --- */
-.avatar-circle {
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(45deg, #FFB75E, #ED8F03);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 1.1rem;
-    position: relative;
-    border: 2px solid rgba(255,255,255,0.3);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+.gradient-bg {
+  /* Gradient màu tím-hồng hiện đại */
+  background: linear-gradient(135deg, #4361ee, #7209b7); 
 }
 
 .status-indicator {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    width: 10px;
-    height: 10px;
-    background-color: #2ecc71;
-    border: 2px solid #fff;
-    border-radius: 50%;
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 10px;
+  height: 10px;
+  background-color: #10b981; /* Green success */
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
 }
 
-.dropdown-toggle {
-    text-decoration: none;
-}
-.dropdown-toggle::after {
-    display: none;
-}
-
-/* --- Custom Dropdown Menu --- */
-.custom-dropdown {
-    border: none;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    padding: 0.5rem;
-    margin-top: 15px !important;
-    min-width: 250px;
-}
-
-.custom-dropdown::before {
-    content: '';
-    position: absolute;
-    top: -6px;
-    right: 20px;
-    width: 12px;
-    height: 12px;
-    background: white;
-    transform: rotate(45deg);
-    border-top: 1px solid rgba(0,0,0,0.05);
-    border-left: 1px solid rgba(0,0,0,0.05);
+/* --- DROPDOWN MENU CUSTOMIZATION --- */
+.custom-menu {
+  min-width: 260px;
+  margin-top: 1rem !important;
+  border: 1px solid rgba(0,0,0,0.05);
+  animation: menuSlideUp 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .dropdown-item {
-    border-radius: 8px;
-    padding: 0.7rem 1rem;
-    display: flex;
-    align-items: center;
-    font-weight: 500;
-    color: #4a5568;
-    margin-bottom: 2px;
+  font-weight: 500;
+  color: #475569;
+  border-radius: 8px;
+  margin-bottom: 2px;
+  transition: all 0.2s;
 }
 
 .dropdown-item:hover {
-    background-color: #f7fafc;
-    color: #2a5298;
-    transform: translateX(5px);
-    transition: all 0.2s;
+  background-color: #f8fafc;
+  color: #4361ee;
+  transform: translateX(4px);
 }
 
-.logout-item:hover {
-    background-color: #fff5f5;
-    color: #e53e3e;
+.dropdown-item.text-danger:hover {
+  background-color: #fef2f2;
+  color: #dc2626;
 }
 
-.icon-box {
-    width: 32px;
-    height: 32px;
+.icon-sm {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.icon-circle-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    margin-right: 12px;
-}
-.bg-light-primary { background: #ebf8ff; color: #3182ce; }
-.bg-light-warning { background: #fffaf0; color: #dd6b20; }
-.bg-light-danger { background: #fff5f5; color: #e53e3e; }
-
-/* --- Mobile Toggle Button Custom --- */
-.navbar-toggler {
-    border: none;
-    padding: 0;
-}
-.navbar-toggler:focus {
-    box-shadow: none;
-}
-.burger-icon span {
-    display: block;
-    width: 25px;
-    height: 2px;
-    background-color: #fff;
-    margin-bottom: 5px;
-    border-radius: 2px;
-    transition: all 0.3s;
-}
-.burger-icon span:last-child {
-    margin-bottom: 0;
 }
 
-/* --- Vue Animation --- */
-.dropdown-anim-enter-active,
-.dropdown-anim-leave-active {
-  transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+.bg-primary-subtle { background-color: #e0f2fe; }
+.bg-success-subtle { background-color: #dcfce7; }
+.bg-info-subtle { background-color: #cffafe; }
+.bg-warning-subtle { background-color: #fef3c7; }
+.bg-danger-subtle { background-color: #fee2e2; }
+
+/* --- ANIMATIONS --- */
+@keyframes menuSlideUp {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.dropdown-anim-enter-from,
-.dropdown-anim-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
+
+.cursor-pointer { cursor: pointer; }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .app-header {
+    height: 70px;
+  }
+  .header-content {
+    padding: 0 1rem;
+  }
+  .header-info {
+      display: none;
+  }
 }
 </style>

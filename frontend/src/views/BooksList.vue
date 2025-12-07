@@ -103,8 +103,8 @@
             <div class="card h-100 shadow-sm border-0 book-card" @click="viewBook(book.MaSach)">
               <div class="position-relative">
                 <img 
-                  src="/images/dacnhantam.jpg" 
-                  class="card-img-top book-thumb"
+                  :src="getBookImage(book)" 
+                  class="card-img-top book-thumb" 
                   :alt="book.TenSach"
                   @error="handleImageError"
                 >
@@ -166,8 +166,8 @@
                   <td>
                     <div class="d-flex align-items-center">
                       <img 
-                        src="/images/dacnhantam.jpg" 
-                        class="book-thumb-small me-3"
+                        :src="getBookImage(book)" 
+                        class="book-thumb-small me-3" 
                         :alt="book.TenSach"
                         @error="handleImageError"
                       >
@@ -333,6 +333,9 @@ export default {
         books.value = response.data.data || []
         pagination.value = response.data.pagination || pagination.value
       } catch (error) {
+        console.log("Route ID:", route.params.id)
+        console.log("Params gửi API:", params)
+
         console.error('Error loading books:', error)
         books.value = []
       } finally {
@@ -402,9 +405,23 @@ export default {
     }
 
     const getBookImage = (book) => {
-      // In a real app, this would come from book.image or similar field
-      return book.image || '/images/book-placeholder.svg'
+    if (!book.AnhBia) {
+        return '/images/book-placeholder.svg'
     }
+
+    // Nếu là link online thì trả về luôn
+    if (book.AnhBia.startsWith('http')) {
+        return book.AnhBia
+    }
+
+    // Chuẩn hóa đường dẫn: bỏ dấu "/" dư ở đầu
+    let imagePath = book.AnhBia.replace(/^\/+/, '');
+
+    const BASE_API_URL = 'http://localhost:3000';
+
+    return `${BASE_API_URL}/${imagePath}`;
+}
+
 
     const handleImageError = (event) => {
       // Fallback to placeholder if image fails to load
