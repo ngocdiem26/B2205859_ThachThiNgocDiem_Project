@@ -7,7 +7,7 @@ dotenv.config();
 const staffAccounts = [
   {
     MSNV: 'NV002',
-    HoTenNV: 'Nguyễn Văn Thủ thư',
+    HoTenNV: 'Nguyễn Văn Hà',
     Password: 'staff123',
     ChucVu: 'Thủ thư',
     DiaChi: '456 Đường Lê Lợi, Quận 1, TP.HCM',
