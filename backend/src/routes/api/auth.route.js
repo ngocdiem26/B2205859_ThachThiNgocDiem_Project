@@ -10,10 +10,9 @@ import { catchAsync } from "../../middlewares/errorHandler.js";
 
 const router = express.Router();
 
-// Public routes with error handling
-router.post("/login", validateLogin, catchAsync(AuthController.login));
-router.post("/register", validateRegister, catchAsync(AuthController.register));
-
+/// Public routes
+router.post("/login", validateLogin, catchAsync(AuthController.login)); // Staff Login
+router.post("/register", validateRegister, catchAsync(AuthController.register)); // Staff Register
 // Protected routes (require authentication) - COMMENTED FOR TESTING
 // router.use(authenticateToken); // Apply auth middleware to all routes below
 

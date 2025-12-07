@@ -2,7 +2,6 @@
   <div class="profile-page">
     <div class="container py-4">
       <div class="row">
-        <!-- Sidebar -->
         <div class="col-md-3 mb-4">
           <div class="card">
             <div class="card-body text-center">
@@ -27,7 +26,6 @@
             </div>
           </div>
 
-          <!-- Navigation -->
           <div class="card mt-3">
             <div class="list-group list-group-flush">
               <button 
@@ -66,9 +64,7 @@
           </div>
         </div>
 
-        <!-- Main Content -->
         <div class="col-md-9">
-          <!-- Profile Tab -->
           <div v-if="activeTab === 'profile'" class="card">
             <div class="card-header">
               <h5 class="mb-0">
@@ -100,7 +96,6 @@
             </div>
           </div>
 
-          <!-- Edit Profile Modal -->
           <div class="modal fade" id="editProfileModal" tabindex="-1" v-if="showEditProfileModal">
             <div class="modal-dialog">
               <div class="modal-content">
@@ -166,7 +161,6 @@
             </div>
           </div>
 
-          <!-- Password Tab -->
           <div v-if="activeTab === 'password'" class="card">
             <div class="card-header">
               <h5 class="mb-0">
@@ -219,7 +213,7 @@
                   <button 
                     type="submit" 
                     class="btn btn-primary" 
-                    :disabled="loading || passwordForm.newPassword !== passwordForm.confirmPassword"
+                    :disabled="loading || (passwordForm.newPassword && passwordForm.newPassword !== passwordForm.confirmPassword)"
                   >
                     <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
                     Đổi mật khẩu
@@ -229,7 +223,6 @@
             </div>
           </div>
 
-          <!-- Borrows Tab -->
           <div v-if="activeTab === 'borrows'" class="card">
             <div class="card-header">
               <h5 class="mb-0">
@@ -274,7 +267,6 @@
             </div>
           </div>
 
-          <!-- History Tab -->
           <div v-if="activeTab === 'history'" class="card">
             <div class="card-header">
               <h5 class="mb-0">
@@ -322,7 +314,6 @@
       </div>
     </div>
 
-    <!-- Avatar Modal -->
     <div class="modal fade" id="avatarModal" tabindex="-1" v-if="showAvatarModal">
       <div class="modal-dialog">
         <div class="modal-content">
@@ -362,7 +353,6 @@
       </div>
     </div>
 
-    <!-- Success/Error Messages -->
     <div v-if="message" class="alert-container">
       <div class="alert alert-dismissible fade show"
         :class="messageType === 'success' ? 'alert-success' : 'alert-danger'" role="alert">
@@ -418,10 +408,15 @@ export default {
         if (!token.value) {
           return { success: false, error: 'Không có token' }
         }
-        const response = await axios.get('/docgia/profile')
-        user.value = response.data.data
-        localStorage.setItem('user', JSON.stringify(response.data.data))
-        return { success: true, user: response.data.data }
+        // Giả định endpoint này là cho Độc giả
+        const response = await axios.get('/docgia/profile') 
+        
+        // Sửa lỗi: Lưu trực tiếp đối tượng data vào user.value
+        const userData = response.data.data;
+        user.value = userData 
+        localStorage.setItem('user', JSON.stringify(userData))
+        
+        return { success: true, user: userData }
       } catch (error) {
         if (error.response?.status === 401) {
           await logout()
@@ -435,33 +430,36 @@ export default {
 
     // Profile user array for display
     const profileUser = computed(() => {
-      if (user.value?._doc) {
-        return [
-          { key: 'HoLot', label: 'Họ lót', value: user.value._doc.HoLot || '-' },
-          { key: 'Ten', label: 'Tên', value: user.value._doc.Ten || '-' },
-          { key: 'NgaySinh', label: 'Ngày sinh', value: user.value._doc.NgaySinh ? formatDate(user.value._doc.NgaySinh) : '-' },
-          { key: 'Phai', label: 'Phái', value: user.value._doc.Phai || '-' },
-          { key: 'DiaChi', label: 'Địa chỉ', value: user.value._doc.DiaChi || '-' },
-          { key: 'DienThoai', label: 'Điện thoại', value: user.value._doc.DienThoai || '-' },
-          { key: 'email', label: 'Email', value: user.value._doc.email || '-' },
-          { key: 'avatar', label: 'Avatar', value: user.value._doc.avatar || '' }
-        ]
-      }
-      return []
+        // SỬA LỖI: Truy cập thuộc tính trực tiếp từ user.value (bỏ ._doc)
+        if (user.value) {
+            return [
+                { key: 'HoLot', label: 'Họ lót', value: user.value.HoLot || '-' },
+                { key: 'Ten', label: 'Tên', value: user.value.Ten || '-' },
+                { key: 'NgaySinh', label: 'Ngày sinh', value: user.value.NgaySinh ? formatDate(user.value.NgaySinh) : '-' },
+                { key: 'Phai', label: 'Phái', value: user.value.Phai || '-' },
+                { key: 'DiaChi', label: 'Địa chỉ', value: user.value.DiaChi || '-' },
+                { key: 'DienThoai', label: 'Điện thoại', value: user.value.DienThoai || '-' },
+                // Giả định email là thuộc tính trực tiếp từ API (docgia/profile)
+                { key: 'email', label: 'Email', value: user.value.email || user.value.Email || '-' },
+                { key: 'avatar', label: 'Avatar', value: user.value.avatar || '' }
+            ]
+        }
+        return []
     })
 
     // Initialize form with user data
     const initializeForm = () => {
-      if (user.value?._doc) {
-        profileForm.HoLot = user.value._doc.HoLot || ''
-        profileForm.Ten = user.value._doc.Ten || ''
-        profileForm.NgaySinh = user.value._doc.NgaySinh ? new Date(user.value._doc.NgaySinh).toISOString().split('T')[0] : ''
-        profileForm.Phai = user.value._doc.Phai || ''
-        profileForm.DiaChi = user.value._doc.DiaChi || ''
-        profileForm.DienThoai = user.value._doc.DienThoai || ''
-        profileForm.avatar = user.value._doc.avatar || ''
-        avatarUrl.value = user.value._doc.avatar || ''
-      }
+        // SỬA LỖI: Truy cập thuộc tính trực tiếp từ user.value (bỏ ._doc)
+        if (user.value) {
+            profileForm.HoLot = user.value.HoLot || ''
+            profileForm.Ten = user.value.Ten || ''
+            profileForm.NgaySinh = user.value.NgaySinh ? new Date(user.value.NgaySinh).toISOString().split('T')[0] : ''
+            profileForm.Phai = user.value.Phai || ''
+            profileForm.DiaChi = user.value.DiaChi || ''
+            profileForm.DienThoai = user.value.DienThoai || ''
+            profileForm.avatar = user.value.avatar || ''
+            avatarUrl.value = user.value.avatar || ''
+        }
     }
 
     // Submit edit profile
@@ -535,8 +533,9 @@ export default {
     // Load borrowed books
     const loadBorrowedBooks = async () => {
       try {
-        if (!user.value?._doc.MaDocGia) return
-        const response = await axios.get(`/theodoimuonsach/docgia/${user.value._doc.MaDocGia}`)
+        // Lấy MaDocGia từ user.value đã được sửa
+        if (!user.value?.MaDocGia) return
+        const response = await axios.get(`/theodoimuonsach/docgia/${user.value.MaDocGia}`)
         const allBorrows = response.data.data || []
         borrowedBooks.value = allBorrows.filter(b => !b.NgayTra)
       } catch (error) {
@@ -547,8 +546,9 @@ export default {
     // Load borrow history
     const loadBorrowHistory = async () => {
       try {
-        if (!user.value?._doc.MaDocGia) return
-        const response = await axios.get(`/theodoimuonsach/docgia/${user.value._doc.MaDocGia}`)
+        // Lấy MaDocGia từ user.value đã được sửa
+        if (!user.value?.MaDocGia) return
+        const response = await axios.get(`/theodoimuonsach/docgia/${user.value.MaDocGia}`)
         borrowHistory.value = response.data.data || []
       } catch (error) {
         showMessage('Có lỗi khi tải lịch sử mượn sách!', 'error')

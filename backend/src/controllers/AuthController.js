@@ -72,6 +72,7 @@ export default {
         msnv: nhanVien.MSNV,
         chucVu: nhanVien.ChucVu,
         quyen: nhanVien.Quyen,
+        role: 'staff', // <--- THÊM ROLE VÀO PAYLOAD
       });
 
       res.status(201).json({
@@ -122,6 +123,7 @@ export default {
       msnv: nhanVien.MSNV,
       chucVu: nhanVien.ChucVu,
       quyen: nhanVien.Quyen,
+      role: 'staff', // <--- THÊM ROLE VÀO PAYLOAD
     });
 
     res.json({
@@ -228,6 +230,7 @@ export default {
       msnv: nhanVien.MSNV,
       chucVu: nhanVien.ChucVu,
       quyen: nhanVien.Quyen,
+      role: 'staff', // <--- THÊM ROLE VÀO PAYLOAD
     });
 
     res.json({

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-
+import { useAuth } from "@/composables/useAuth.js"; // Đảm bảo đường dẫn đúng
 // Lazy load components for better performance
 const Home = () => import("../views/Home.vue");
 const Login = () => import("../views/Login.vue");
@@ -39,8 +39,7 @@ const routes = [
       { path: "categories/:id", name: "CategoryBooks", component: BooksList },
       { path: "books", name: "Books", component: BooksList },
       { path: "books/:id", name: "BookDetail", component: BookDetail },
-      { path: "profile", name: "Profile", component: Profile },
-      { path: "about", name: "About", component: About },
+{ path: "profile", name: "Profile", component: Profile, meta: { requiresAuth: true, role: 'reader' } },      { path: "about", name: "About", component: About },
       { path: "contact", name: "Contact", component: Contact },
       { path: "help", name: "Help", component: Help },
       { path: "privacy", name: "Privacy", component: Privacy },
@@ -48,14 +47,15 @@ const routes = [
     ],
   },
 
-  // Auth routes (standalone)
-  { path: "/login", name: "Login", component: Login },
-  { path: "/register", name: "Register", component: Register },
+ // Auth routes (standalone)
+  { path: "/login", name: "Login", component: Login, meta: { isPublic: true } },
+  { path: "/register", name: "Register", component: Register, meta: { isPublic: true } },
   
   // Admin routes with layout
   {
     path: "/admin",
     component: AdminLayout,
+    meta: { requiresAuth: true, role: 'staff' }, // Thêm meta cho tất cả children
     children: [
       { path: "", name: "Dashboard", component: Dashboard },
       { path: "docgia", name: "DocGia", component: DocGia },
@@ -91,99 +91,94 @@ const router = createRouter({
   routes,
 });
 
-// Navigation guard for authentication
-router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem("token");
-  const userRole = localStorage.getItem("userRole");
+// Navigation guard for authentication (ĐÃ SỬA LẠI HOÀN TOÀN)
+router.beforeEach(async (to, from, next) => {
+  const { 
+    isAuthenticated, 
+    isReader, 
+    isStaff, 
+    getUserRole, 
+    logout, 
+    currentToken,
+    initAuth 
+  } = useAuth();
+  
+  // Gọi initAuth để đảm bảo header được thiết lập lại nếu có token trong storage
+  initAuth();
 
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    "/login",
-    "/register",
-    "/",
-    "/categories",
-    "/books",
-    "/about",
-    "/contact",
-    "/help",
-    "/privacy",
-    "/terms",
-    "/categories",   // ✔ GIỜ route này đã tồn tại
-  ];
+  const token = currentToken.value;
+  const userRole = getUserRole();
+  
+  // Kiểm tra meta data trên route hoặc route cha
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
+  const requiredRole = to.matched.some(record => record.meta.role) 
+    ? to.matched.find(record => record.meta.role).meta.role 
+    : null;
+  const isAuthPage = to.name === 'Login' || to.name === 'Register';
 
-  // Routes that require reader authentication
-  const readerAuthRoutes = ["/profile", "/my-borrows", "/borrow-history"];
 
-  // Admin routes that require staff authentication
-  const adminRoutes = ["/admin"];
-
-  // Check if current route requires authentication
-  const requiresReaderAuth = readerAuthRoutes.some((route) =>
-    to.path.startsWith(route)
-  );
-  const requiresAdminAuth = adminRoutes.some((route) =>
-    to.path.startsWith(route)
-  );
-
-  // Check if it's a public route
-  const isPublicRoute =
-    publicRoutes.includes(to.path) ||
-    to.path.startsWith("/categories/") ||
-    to.path.startsWith("/books/");
-
-  if ((requiresReaderAuth || requiresAdminAuth) && !token) {
-    // Redirect to login if authentication required but not authenticated
-    next({ path: "/login", query: { redirect: to.fullPath } });
-  } else if ((to.path === "/login" || to.path === "/register") && token) {
-    // Redirect authenticated users away from login/register
-    if (userRole === "staff") {
-      next("/admin");
-    } else {
-      next("/");
-    }
-  } else if (token && (requiresReaderAuth || requiresAdminAuth)) {
-    // Check token expiration for authenticated routes
+  // 1. Kiểm tra Token hết hạn/Không hợp lệ
+  if (token && requiresAuth) {
     try {
-      // Validate JWT token format and expiration
-      const tokenParts = token.split(".");
-      if (tokenParts.length !== 3) {
-        throw new Error("Invalid token format");
-      }
-
-      // Decode and check expiration
-      const payload = JSON.parse(
-        atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/"))
-      );
-      const currentTime = Date.now() / 1000;
-
-      if (payload.exp && payload.exp < currentTime) {
-        // Token expired
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("userRole");
-        next({ path: "/login", query: { redirect: to.fullPath } });
-      } else {
-        // Check role-based access
-        if (requiresAdminAuth && userRole !== "staff") {
-          // Admin route but not staff user
-          next("/");
-        } else if (requiresReaderAuth && userRole !== "reader") {
-          // Reader route but not reader user
-          next("/admin");
-        } else {
-          next();
+        // Chỉ decode local token để check expiration nhanh
+        const tokenParts = token.split(".");
+        if (tokenParts.length !== 3) {
+            throw new Error("Invalid token format");
         }
-      }
+        
+        const payload = JSON.parse(
+            atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/"))
+        );
+        const currentTime = Date.now() / 1000;
+
+        if (payload.exp && payload.exp < currentTime) {
+            // Token expired. Gọi logout an toàn (sẽ tự clear role đang active)
+            console.warn("Token expired. Logging out.");
+            await logout(); 
+            return next({ name: "Login", query: { redirect: to.fullPath } });
+        }
     } catch (error) {
-      // Invalid token, clear storage and redirect to login
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      localStorage.removeItem("userRole");
-      next({ path: "/login", query: { redirect: to.fullPath } });
+        // Token không hợp lệ. Gọi logout an toàn.
+        console.error("Invalid token detected:", error);
+        await logout();
+        return next({ name: "Login", query: { redirect: to.fullPath } });
     }
-  } else {
-    next();
   }
+
+
+  // 2. Xử lý truy cập vào trang yêu cầu đăng nhập
+  if (requiresAuth && !isAuthenticated.value) {
+    // Không có token hợp lệ, redirect về Login
+    return next({ name: "Login", query: { redirect: to.fullPath } });
+  }
+
+  // 3. Kiểm tra phân quyền dựa trên vai trò
+  if (requiresAuth && isAuthenticated.value) {
+    if (requiredRole === 'staff' && !isStaff.value) {
+      // Yêu cầu Staff nhưng đang là Reader
+      console.warn(`Access denied. Staff role required for ${to.path}. Current role: ${userRole}`);
+      return next({ name: 'PublicHome' }); // Hoặc trang lỗi 403
+    }
+
+    if (requiredRole === 'reader' && !isReader.value) {
+      // Yêu cầu Reader nhưng đang là Staff
+      console.warn(`Access denied. Reader role required for ${to.path}. Current role: ${userRole}`);
+      return next({ name: 'Dashboard' }); // Hoặc trang lỗi 403
+    }
+  }
+
+  // 4. Xử lý người dùng đã đăng nhập truy cập trang Login/Register
+  if (isAuthPage && isAuthenticated.value) {
+    // Redirect authenticated users away from login/register
+    if (isStaff.value) {
+      return next({ name: "Dashboard" });
+    } else if (isReader.value) {
+      return next({ name: "PublicHome" });
+    }
+  }
+
+  // 5. Mọi thứ hợp lệ
+  next();
 });
 
 export default router;
