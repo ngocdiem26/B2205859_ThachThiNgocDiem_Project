@@ -72,6 +72,20 @@ export default {
 
       
       const searchQuery = buildSearchQuery(search);
+      // --- BẮT ĐẦU ĐOẠN THÊM MỚI ---
+      // Kiểm tra nếu Frontend có gửi MaNhaXuatBan lên
+      if (req.query.MaNhaXuatBan) {
+        console.log("Applying filter for MaNhaXuatBan:", req.query.MaNhaXuatBan);
+        // Thêm điều kiện lọc chính xác vào query của Mongoose
+        searchQuery.MaNhaXuatBan = req.query.MaNhaXuatBan;
+      }
+      
+      // Tương tự, nếu sau này bạn muốn lọc theo trạng thái còn hàng (available)
+      if (req.query.available === 'true') {
+         searchQuery.SoQuyen = { $gt: 0 };
+      } else if (req.query.available === 'false') {
+         searchQuery.SoQuyen = 0;
+      }
       console.log("Search query built:", JSON.stringify(searchQuery));
 
       
@@ -157,22 +171,48 @@ export default {
   },
 
   
+  // async getById(req, res) {
+  //   let query = Sach.findOne({ MaSach: req.params.maSach });
+  //   query = optimizeQuery(query, "sach", "detail");
+
+  //   const sach = await query.lean();
+
+  //   if (!sach) {
+  //     throw new AppError("Không tìm thấy sách", 404, "SACH_NOT_FOUND");
+  //   }
+
+  //   return createOptimizedResponse(res, sach, {
+  //     message: "Lấy thông tin sách thành công",
+  //     context: "detail",
+  //     model: "sach",
+  //   });
+  // },
   async getById(req, res) {
-    let query = Sach.findOne({ MaSach: req.params.maSach });
-    query = optimizeQuery(query, "sach", "detail");
+  let query = Sach.findOne({ MaSach: req.params.maSach });
+  
+    // 1. Thêm select để đảm bảo tất cả các trường cần thiết được chọn.
+    // Nếu optimizeQuery không select, select này sẽ hoạt động.
+    // Nếu optimizeQuery có select, nó sẽ ghi đè, nhưng nếu optimizeQuery thiếu AnhBia thì cần phải sửa trực tiếp trong optimizeQuery.
+    // Tạm thời, ta dùng select để chọn tất cả các trường cần thiết cho trang chi tiết.
+    query = query.select(
+        'MaSach TenSach DonGia SoQuyen SoQuyenConLai NamXuatBan MaNhaXuatBan NhaXuatBan NguonGoc AnhBia'
+    );
+    
+  query = optimizeQuery(query, "sach", "detail"); // Giữ nguyên hàm tối ưu hóa
 
-    const sach = await query.lean();
+  const sach = await query.lean();
 
-    if (!sach) {
-      throw new AppError("Không tìm thấy sách", 404, "SACH_NOT_FOUND");
-    }
+  if (!sach) {
+   throw new AppError("Không tìm thấy sách", 404, "SACH_NOT_FOUND");
+  }
 
-    return createOptimizedResponse(res, sach, {
-      message: "Lấy thông tin sách thành công",
-      context: "detail",
-      model: "sach",
-    });
-  },
+  // 2. Trả về phản hồi
+  return createOptimizedResponse(res, sach, {
+   message: "Lấy thông tin sách thành công",
+   context: "detail",
+   model: "sach",
+  });
+ },
 
   
 async create(req, res) {

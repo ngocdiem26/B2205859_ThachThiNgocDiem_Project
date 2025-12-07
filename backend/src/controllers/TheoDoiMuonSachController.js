@@ -634,9 +634,125 @@ export default {
   },
 
   
-  async registerBorrow(req, res) {
-    console.log('Reader registering borrow request:', req.body);
+  // async registerBorrow(req, res) {
+  //   console.log('Reader registering borrow request:', req.body);
 
+  //   const { MaDocGia, MaSach, NgayHenTra, GhiChu } = req.body;
+
+    
+  //   if (!MaDocGia || !MaSach || !NgayHenTra) {
+  //     throw new AppError(
+  //       'Thiếu thông tin bắt buộc',
+  //       400,
+  //       'MISSING_REQUIRED_FIELDS'
+  //     );
+  //   }
+
+
+  //   console.log('Checking if reader exists:', MaDocGia);
+  //   const docGia = await DocGia.findOne({ MaDocGia }).lean();
+  //   if (!docGia) {
+  //     throw new AppError('Không tìm thấy độc giả', 404, 'DOCGIA_NOT_FOUND');
+  //   }
+
+    
+  //   console.log('Checking if book exists:', MaSach);
+  //   const sach = await Sach.findOne({ MaSach }).lean();
+  //   if (!sach) {
+  //     throw new AppError('Không tìm thấy sách', 404, 'SACH_NOT_FOUND');
+  //   }
+
+  //   const soQuyenConLai =
+  //     sach.SoQuyenConLai !== undefined ? sach.SoQuyenConLai : sach.SoQuyen;
+  //   if (soQuyenConLai <= 0) {
+  //     throw new AppError('Sách đã hết', 400, 'BOOK_OUT_OF_STOCK');
+  //   }
+
+    
+  //   console.log('Checking existing borrow record...');
+  //   const existingBorrow = await TheoDoiMuonSach.findOne({
+  //     MaDocGia,
+  //     MaSach,
+  //     TrangThai: { $ne: 'Đã trả' },
+  //   }).lean();
+
+  //   if (existingBorrow) {
+  //     if (existingBorrow.isActivate === 0) {
+  //       throw new AppError(
+  //         'Bạn đã có đăng ký mượn sách này đang chờ duyệt',
+  //         400,
+  //         'PENDING_REQUEST_EXISTS'
+  //       );
+  //     } else {
+  //       throw new AppError(
+  //         'Bạn đã mượn sách này và chưa trả',
+  //         400,
+  //         'ALREADY_BORROWED'
+  //       );
+  //     }
+  //   }
+
+    
+  //   const dueDate = new Date(NgayHenTra);
+  //   const today = new Date();
+  //   const maxDate = new Date();
+  //   maxDate.setDate(today.getDate() + 30);
+
+  //   if (dueDate <= today) {
+  //     throw new AppError(
+  //       'Ngày hẹn trả phải sau ngày hôm nay',
+  //       400,
+  //       'INVALID_DUE_DATE'
+  //     );
+  //   }
+
+  //   if (dueDate > maxDate) {
+  //     throw new AppError(
+  //       'Thời gian mượn tối đa 30 ngày',
+  //       400,
+  //       'EXCEED_MAX_BORROW_PERIOD'
+  //     );
+  //   }
+
+    
+  //   const MaTheoDoiMuonSach = await generateNextId();
+
+    
+  //   console.log('Creating borrow registration...');
+  //   const theoDoiMuonSach = new TheoDoiMuonSach({
+  //     MaTheoDoiMuonSach,
+  //     MaDocGia,
+  //     MaSach,
+  //     NgayMuon: new Date(),
+  //     NgayHenTra: new Date(NgayHenTra),
+  //     GhiChu: GhiChu || 'Đăng ký mượn sách từ độc giả',
+  //     TrangThai: 'Đang mượn',
+  //     isActivate: 0, 
+      
+  //   });
+
+  //   await theoDoiMuonSach.save();
+  //   console.log('Borrow registration saved successfully');
+
+    
+  //   const savedRecord = await TheoDoiMuonSach.findById(
+  //     theoDoiMuonSach._id
+  //   ).lean();
+
+  //   res.status(201).json({
+  //     success: true,
+  //     message: 'Đăng ký mượn sách thành công. Vui lòng chờ thư viện phê duyệt.',
+  //     data: savedRecord,
+  //   });
+
+  //   console.log('Borrow registration completed successfully');
+  // },
+  // Giả định MAX_BORROW_LIMIT được định nghĩa ở đây hoặc trong file constants chung
+
+
+async registerBorrow(req, res) {
+    console.log('Reader registering borrow request:', req.body);
+    const MAX_BORROW_LIMIT = 4;
     const { MaDocGia, MaSach, NgayHenTra, GhiChu } = req.body;
 
     
@@ -655,6 +771,27 @@ export default {
       throw new AppError('Không tìm thấy độc giả', 404, 'DOCGIA_NOT_FOUND');
     }
 
+    // =========================================================
+    // 💡 BƯỚC MỚI: KIỂM TRA GIỚI HẠN SÁCH ĐANG MƯỢN/QUÁ HẠN
+    // =========================================================
+    console.log(`Checking borrow limit for reader ${MaDocGia}...`);
+    const activeBorrowsCount = await TheoDoiMuonSach.countDocuments({
+      MaDocGia,
+      // Đếm tất cả các phiếu mượn CHƯA được trả
+      // TrangThai: {'Đang mượn', 'Quá hạn', 'Chờ duyệt'}
+      TrangThai: { $ne: 'Đã trả' }, 
+    });
+
+    if (activeBorrowsCount >= MAX_BORROW_LIMIT) {
+      throw new AppError(
+        `Đã đạt giới hạn mượn! Bạn chỉ được mượn tối đa ${MAX_BORROW_LIMIT} cuốn. Hiện bạn đang có ${activeBorrowsCount} cuốn chưa trả hoặc đang chờ duyệt.`,
+        400,
+        'BORROW_LIMIT_EXCEEDED'
+      );
+    }
+    // =========================================================
+    // 💡 KẾT THÚC BƯỚC KIỂM TRA GIỚI HẠN
+    // =========================================================
     
     console.log('Checking if book exists:', MaSach);
     const sach = await Sach.findOne({ MaSach }).lean();
@@ -726,7 +863,7 @@ export default {
       NgayMuon: new Date(),
       NgayHenTra: new Date(NgayHenTra),
       GhiChu: GhiChu || 'Đăng ký mượn sách từ độc giả',
-      TrangThai: 'Đang mượn',
+      TrangThai: 'Đang mượn', // Hoặc 'Chờ duyệt' tùy theo logic của bạn. Dựa vào code cũ, bạn dùng 'Đang mượn' sau đó isActivate = 0
       isActivate: 0, 
       
     });
@@ -789,7 +926,7 @@ export default {
     
     theoDoiMuonSach.isActivate = 1;
     theoDoiMuonSach.NhanVienMuon = currentUser.MSNV || 'NV001';
-    theoDoiMuonSach.GhiChu = (theoDoiMuonSach.GhiChu || '') + ' - Đã được duyệt bởi nhân viên';
+    theoDoiMuonSach.GhiChu = (theoDoiMuonSach.GhiChu || '') + ' - Đã được duyệt bởi nhân viên ';
 
     await theoDoiMuonSach.save();
 
